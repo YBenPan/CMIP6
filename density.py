@@ -1,3 +1,7 @@
+"""
+Generates density data from historical pressure and temperature data
+"""
+
 import xarray as xr
 import numpy as np
 
