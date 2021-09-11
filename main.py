@@ -20,9 +20,12 @@ output_image_path = "D:/PM2.5_images"
 # Generate density data for conversion
 # get_density(density_path)
 
-# Import density data
+# Import density data and generate matrix for calculation
 density_ds = xr.open_mfdataset(density_path + "density_201412.nc")
 density_value = density_ds.density.values
+density_dynamic = np.broadcast_to(
+    density_ds.density.values, (86,) + density_ds.density.values.shape
+)
 
 ssps = os.listdir(mmrpm2p5_path)
 for ssp in ssps:
@@ -41,13 +44,15 @@ for ssp in ssps:
             data_dir = f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}/{real}/{glabel[0]}"
 
             files = sorted(glob(data_dir + "/*nc"))
-            
+
             # resolve concat_dim error in some MRI-ESM2-0 models
             if (ssp == "ssp126" or ssp == "ssp585") and model == "MRI-ESM2-0":
                 files = files[0:9]
 
+            ds = xr.open_mfdataset(files, concat_dim="time")
+
             # Annualize
-            annual_ds = dsi.resample(time="1YS").mean()
+            annual_ds = ds.resample(time="1YS").mean()
 
             # Regrid
             new_lat = np.arange(-90, 90, 0.5)
@@ -55,31 +60,35 @@ for ssp in ssps:
             dsi = annual_ds.interp(lat=new_lat, lon=new_lon)
 
             # Fill in missing values
-            dsi = dsi.interpolate_na(dim = "lon", fill_value="extrapolate")
-            dsi = dsi.interpolate_na(dim = "lat", fill_value="extrapolate")
-            
+            dsi = dsi.interpolate_na(dim="lon", fill_value="extrapolate")
+            dsi = dsi.interpolate_na(dim="lat", fill_value="extrapolate")
+
             # Concentration = MMR * Density
-            conc_da = dsi.mmrpm2p5.values
-            for i in range(0, len(dsi.time)): 
-                for j in range(0, len(dsi.lat)): 
-                    for k in range(0, len(dsi.lon)):
-                            conc_da[i][0][j][k] *= density_value[0][j][k]
-            dsi.mmrpm2p5.values = conc_da
-            dsi = dsi.rename({'mmrpm2p5':'concpm2p5'})
-            
-            output_image_dir = f"{output_image_path}/{ssp}/mmrpm2p5/{model}/{real}/{glabel[0]}/"
+            density_matrix = density_dynamic[: len(dsi.time)]
+            dsi.mmrpm2p5.values *= density_matrix
+            dsi = dsi.rename({"mmrpm2p5": "concpm2p5"})
+
+            output_image_dir = (
+                f"{output_image_path}/{ssp}/mmrpm2p5/{model}/{real}/{glabel[0]}/"
+            )
             output_image_file_name = "result"
             if not os.path.isdir(output_image_dir):
                 os.makedirs(output_image_dir)
 
             # Plot last datapoint in time and save the figure
-            fig, axis = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
-            dsi.concpm2p5.isel(time=len(dsi.concpm2p5.time) - 1).plot(ax = axis, transform = ccrs.PlateCarree(), cbar_kwargs={'label': 'Concentration of PM2.5 in kg $m^{-3}$'})
+            fig, axis = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+            dsi.concpm2p5.isel(time=len(dsi.concpm2p5.time) - 1).plot(
+                ax=axis,
+                transform=ccrs.PlateCarree(),
+                cbar_kwargs={"label": "Concentration of PM2.5 in kg $m^{-3}$"},
+            )
             fig.set_size_inches(12, 8)
             axis.coastlines()
             output_date = dsi.concpm2p5.time.values[-1]
             plt.title(f"{ssp}, model {model}, realization {real} on {output_date}")
             plt.savefig(output_image_dir + output_image_file_name)
             plt.close(fig)
-            # print(f"{datetime.datetime.now()} DONE: {ssp}, model {model}, realization {real}")
+            print(
+                f"{datetime.datetime.now()} DONE: {ssp}, model {model}, realization {real}"
+            )
             # plt.show()
