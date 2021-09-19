@@ -15,7 +15,7 @@ from density import get_density
 # Paths Settings
 mmrpm2p5_path = "D:/PM2.5"
 density_path = "F:/Computer Programming/Projects/CMIP6/data/"
-output_image_path = "D:/PM2.5_images"
+output_image_path = "D:/PM2.5_images_avg"
 
 def year_helper(date):
     if isinstance(date, np.datetime64):
@@ -43,9 +43,6 @@ for ssp in ssps:
         # Loop over realization
         reals = os.listdir(f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}")
         for real in reals:
-
-            if (ssp != "ssp370" or model != "MIROC-ES2L"): 
-                continue
 
             # Loop over glabels
             glabel = os.listdir(f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}/{real}")
@@ -76,43 +73,79 @@ for ssp in ssps:
             dsi.mmrpm2p5.values *= density_matrix
             dsi = dsi.rename({"mmrpm2p5": "concpm2p5"})
 
-            print(dsi.concpm2p5.values)
             # Initialize output directories
             output_image_dir = (
                 f"{output_image_path}/{ssp}/mmrpm2p5/{model}/{real}/{glabel[0]}/"
             )
-            output_image_file_name = "result"
             if not os.path.isdir(output_image_dir):
-                os.makedirs(output_image_dir)            
+                os.makedirs(output_image_dir)      
+            output_image_file_name = "combined"      
 
             # Plot last datapoint in time and save the figure
             fig, axes = plt.subplots(nrows=2, subplot_kw={"projection": ccrs.PlateCarree()})
             fig.set_size_inches(12, 8)
             
-            avg_first_10 = np.mean(dsi.concpm2p5.values[:10], axis=0)
-            avg_last_10 = np.mean(dsi.concpm2p5.values[-10:], axis=0)
+            avg_first_10 = np.mean(dsi.concpm2p5.values[:10], axis=0)[0]
+            avg_last_10 = np.mean(dsi.concpm2p5.values[-10:], axis=0)[0]
+            max_conc = max(np.max(avg_first_10), np.max(avg_last_10))
 
-            im = axes[0].pcolormesh(dsi.lon.values, dsi.lat.values, avg_first_10[0])
-            im = axes[1].pcolormesh(dsi.lon.values, dsi.lat.values, avg_last_10[0])
-            fig.colorbar(im, ax=axes.ravel().tolist(), label="Concentration of PM2.5 in kg $m^{-3}$")
-
+            # Plot start of the range
+            im = axes[0].pcolormesh(dsi.lon.values, dsi.lat.values, avg_first_10, vmin = 0, vmax = max_conc, cmap="magma_r")
             start_year = year_helper(dsi.concpm2p5.time.values[0])
             end_year = year_helper(dsi.concpm2p5.time.values[9])
             axes[0].coastlines()
             axes[0].set_title(
-                f"Average of PM2.5 Concentration from {start_year} to {end_year}\n"
-                f"{ssp}, model {model}, realization {real}"
+                f"{ssp}, model {model}, realization {real}\n"
+                f"Average of PM2.5 Concentration from {start_year} to {end_year}"
             )
-            axes[1].coastlines()
+
+            # Plot end of the range
+            im = axes[1].pcolormesh(dsi.lon.values, dsi.lat.values, avg_last_10, vmin = 0, vmax = max_conc, cmap="magma_r")
+            fig.colorbar(im, ax=axes.ravel().tolist(), label="Concentration of PM2.5 in kg $m^{-3}$")
             end_year = year_helper(dsi.concpm2p5.time.values[-1])
             start_year = year_helper(dsi.concpm2p5.time.values[-10])
+            axes[1].coastlines()
             axes[1].set_title(
-                f"Average of PM2.5 Concentration from {start_year} to {end_year}\n"
-                f"{ssp}, model {model}, realization {real}"
+                f"Average of PM2.5 Concentration from {start_year} to {end_year}"
             )
-            # plt.savefig(output_image_dir + output_image_file_name)
+            plt.savefig(output_image_dir + output_image_file_name)
+            # plt.show()
+            plt.close(fig)
+
+            fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+            fig.set_size_inches(12, 8)
+            im = ax.pcolormesh(dsi.lon.values, dsi.lat.values, avg_first_10, cmap="magma_r")
+            start_year = year_helper(dsi.concpm2p5.time.values[0])
+            end_year = year_helper(dsi.concpm2p5.time.values[9])
+            ax.coastlines()
+            ax.set_title(
+                f"{ssp}, model {model}, realization {real}\n"
+                f"Average of PM2.5 Concentration from {start_year} to {end_year}"
+            )
+            fig.colorbar(im, ax=ax, label="Concentration of PM2.5 in kg $m^{-3}$", shrink=0.6)
+            output_image_file_name = f"{start_year}_{end_year}"
+            # plt.show()
+            plt.savefig(output_image_dir + output_image_file_name)
+            plt.close(fig)
+
+            fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+            fig.set_size_inches(12, 8)
+            im = ax.pcolormesh(dsi.lon.values, dsi.lat.values, avg_last_10, cmap="magma_r")
+            end_year = year_helper(dsi.concpm2p5.time.values[-1])
+            start_year = year_helper(dsi.concpm2p5.time.values[-10])
+            ax.coastlines()
+            ax.set_title(
+                f"{ssp}, model {model}, realization {real}\n"
+                f"Average of PM2.5 Concentration from {start_year} to {end_year}"
+            )
+            fig.colorbar(im, ax=ax, label="Concentration of PM2.5 in kg $m^{-3}$", shrink=0.6)
+            output_image_file_name = f"{start_year}_{end_year}"
+            # plt.show()
+            plt.savefig(output_image_dir + output_image_file_name)
+            plt.close(fig)
+
             print(
                 f"{datetime.now()} DONE: {ssp}, model {model}, realization {real}"
             )
-            plt.show()
-            plt.close(fig)
+            # plt.tight_layout()
+            # plt.close(fig)
