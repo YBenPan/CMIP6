@@ -49,9 +49,9 @@ def plot_combined():
         f"Average of PM2.5 Concentration from {start_year} to {end_year}"
     )
     output_image_file_name = "combined"      
-    plt.show()
-    # plt.savefig(output_image_dir + output_image_file_name)
-    # plt.close(fig)
+    # plt.show()
+    plt.savefig(output_image_dir + output_image_file_name)
+    plt.close(fig)
 
 def plot_start():
 
@@ -67,9 +67,9 @@ def plot_start():
     )
     fig.colorbar(im, ax=ax, label="Concentration of PM2.5 in kg $m^{-3}$", shrink=0.6)
     output_image_file_name = f"{start_year}_{end_year}"
-    plt.show()
-    # plt.savefig(output_image_dir + output_image_file_name)
-    # plt.close(fig)
+    # plt.show()
+    plt.savefig(output_image_dir + output_image_file_name)
+    plt.close(fig)
 
 def plot_end(): 
     fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
@@ -84,9 +84,9 @@ def plot_end():
     )
     fig.colorbar(im, ax=ax, label="Concentration of PM2.5 in kg $m^{-3}$", shrink=0.6)
     output_image_file_name = f"{start_year}_{end_year}"
-    plt.show()
-    # plt.savefig(output_image_dir + output_image_file_name)
-    # plt.close(fig)
+    # plt.show()
+    plt.savefig(output_image_dir + output_image_file_name)
+    plt.close(fig)
 
 def plot_diff(): 
     diff = avg_last_10 - avg_first_10
@@ -130,6 +130,9 @@ for ssp in ssps:
         reals = os.listdir(f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}")
         for real in reals:
 
+            if (ssp != "ssp585" or model != "NorESM2-MM"):
+                continue
+
             # Loop over glabels
             glabel = os.listdir(f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}/{real}")
             data_dir = f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}/{real}/{glabel[0]}"
@@ -170,9 +173,9 @@ for ssp in ssps:
             avg_last_10 = np.mean(dsi.concpm2p5.values[-10:], axis=0)[0]
             max_conc = max(np.max(avg_first_10), np.max(avg_last_10))
 
-            # plot_combined()
-            # plot_start()
-            # plot_end()
+            plot_combined()
+            plot_start()
+            plot_end()
             plot_diff()
         
             print(
