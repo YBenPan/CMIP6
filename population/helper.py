@@ -155,8 +155,10 @@ df.reset_index()
 
 df = df.sort_values(by = ['Year', 'Age', 'Country_ID'])
 
-multi_df = df.set_index(['Country_ID', 'Year', 'Age'])
+multi_df = df.set_index(['Year', 'Age', 'Country_ID'])
 
-# ds = multi_df.to_xarray()
+ds = multi_df.to_xarray()
+
+ds.to_netcdf(output_path + 'SSP1.nc')
 
 multi_df.to_csv(output_path + 'SSP1.csv')
