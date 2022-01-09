@@ -2,20 +2,18 @@
 
 
 import os
-import matplotlib
 import xarray as xr
 from glob import glob
 import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from cartopy.util import add_cyclic_point
 import cartopy.crs as ccrs
 from datetime import datetime
-from density import get_density
+# from density import get_density
 
 # Paths Settings
-mmrpm2p5_path = "D:/PM2.5"
+mmrpm2p5_path = "D:/CMIP6_data/PM2.5"
 density_path = "F:/Computer Programming/Projects/CMIP6/data/"
 output_image_path = "D:/PM2.5_images_avg"
 
@@ -130,9 +128,6 @@ for ssp in ssps:
         reals = os.listdir(f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}")
         for real in reals:
 
-            if (ssp != "ssp585" or model != "NorESM2-MM"):
-                continue
-
             # Loop over glabels
             glabel = os.listdir(f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}/{real}")
             data_dir = f"{mmrpm2p5_path}/{ssp}/mmrpm2p5/{model}/{real}/{glabel[0]}"
@@ -156,8 +151,8 @@ for ssp in ssps:
             annual_ds = ds.resample(time="1YS").mean()
             
             # Regrid
-            new_lat = np.arange(-90, 90, 0.5)
-            new_lon = np.arange(0, 360, 0.5)
+            new_lat = np.arange(-89.75, 90.25, 0.5)
+            new_lon = np.arange(0.25, 360.25, 0.5)
             dsi = annual_ds.interp(lat=new_lat, lon=new_lon)
 
             # Fill in missing values

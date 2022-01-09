@@ -66,8 +66,8 @@ def process(t):
     annual_ds = ds.resample(time="1YS").mean()
 
     # Regrid
-    new_lat = np.arange(-90, 90, 0.5)
-    new_lon = np.arange(0, 360, 0.5)
+    new_lat = np.arange(-89.75, 90.25, 0.5)
+    new_lon = np.arange(0.25, 360.25, 0.5)
     dsi = annual_ds.interp(lat=new_lat, lon=new_lon).squeeze()
 
     # Fill in missing values
