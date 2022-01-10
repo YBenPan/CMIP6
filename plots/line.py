@@ -2,10 +2,9 @@ from glob import glob
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 
 ####################################################################################################
-#### CREATE PLOTS BASED ON COUNTRY MORTALITY DATA
+#### CREATE LINE PLOTS BASED ON COUNTRY MORTALITY DATA
 ####################################################################################################
 
 ####################################################################################################
@@ -13,7 +12,7 @@ import pandas as pd
 #### WHERE ARE THE COUNTRY MORTALITY DATA?
 base_path = "D:/CMIP6_data/Mortality/"
 #### WHERE IS THE OUTPUT FOLDER?
-output_path = "D:/CMIP6_Images/Mortality/plot1/"
+output_path = "D:/CMIP6_Images/Mortality/line/"
 ####################################################################################################
 
 ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp585"]
@@ -21,16 +20,16 @@ ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp585"]
 years = np.arange(2015, 2101)
 # years = [2100]
 year_bins = [
-    np.arange(0, 5),
-    np.arange(5, 15),
-    np.arange(15, 25),
-    np.arange(25, 35),
-    np.arange(35, 45),
-    np.arange(45, 55),
-    np.arange(55, 65),
-    np.arange(65, 75),
-    np.arange(75, 85),
-    [85]
+    np.arange(0, 5),    # 2015-2019
+    np.arange(5, 15),   # 2020-2029
+    np.arange(15, 25),  # 2030-2039
+    np.arange(25, 35),  # 2040-2049
+    np.arange(35, 45),  # 2050-2059
+    np.arange(45, 55),  # 2060-2069
+    np.arange(55, 65),  # 2070-2079
+    np.arange(65, 75),  # 2080-2089
+    np.arange(75, 85),  # 2090-2099
+    [85]                # 2100
 ]
 
 year_bin_names = [str(x) + '*' for x in np.arange(201, 211)]
@@ -151,13 +150,13 @@ def avg():
             ax.set_ylabel("Number of deaths")
 
         output_file = f'{output_path}{disease}_avg.png'
-        # plt.savefig(output_file)
-        plt.show()
+        plt.savefig(output_file)
+        # plt.show()
         plt.close(fig)
 
 
 def main():
-    all_years()
+    avg()
 
 
 if __name__ == "__main__":
