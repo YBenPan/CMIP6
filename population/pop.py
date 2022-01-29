@@ -51,8 +51,8 @@ longitude = np.arange(0.25, 360, 0.5)
 ####################################################################################################
 
 ssps = ["ssp1", "ssp2", "ssp3"]
-age_groups = [1, 3, 6, 8]
-age_group_names = np.array(["0--19", "20--39", "40--64", "65+"], dtype=object)
+age_groups = [5, 7, 9]
+age_group_names = np.array(["25+", "65+", "80+"], dtype=object)
 
 years = np.arange(2010, 2110, 10)
 
@@ -104,7 +104,7 @@ for ssp in range(len(ssps)):
                 age_group=age_group_names,
             ),
             attrs=dict(
-                description="Population of different age groups converted to a 0.5x0.5 degree grid",
+                description="Population of 25+, 60+, and 80+ converted to a 0.5x0.5 degree grid",
             ),
         )
 

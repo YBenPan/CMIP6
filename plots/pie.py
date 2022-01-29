@@ -61,12 +61,12 @@ def process(t):
 
     fig = plt.figure(figsize=(15, 15))
     axes = fig.subplots(nrows=2, ncols=2)
-    axes[0, 0].set_title("USA")
-    axes[0, 1].set_title("India")
-    axes[1, 0].set_title("China")
-    axes[1, 1].set_title("World")
+    axes[0, 0].set_title("USA", fontsize=24)
+    axes[0, 1].set_title("India", fontsize=24)
+    axes[1, 0].set_title("China", fontsize=24)
+    axes[1, 1].set_title("World", fontsize=24)
     title = f'Mortality Distribution in the {year_bin_names[year_bin_ind]} in {ssp} Scenario'
-    fig.suptitle(title)
+    fig.suptitle(title, fontsize=24)
 
     data = np.empty((len(diseases), len(countries)))
 
@@ -90,14 +90,17 @@ def process(t):
         mortality = [mortality[183], mortality[77], mortality[35], mortality[0:].sum()]
         data[disease_ind] = mortality
 
-    axes[0, 0].pie(data[:, 0], labels=diseases, autopct='%.1f%%')
-    axes[0, 1].pie(data[:, 1], labels=diseases, autopct='%.1f%%')
-    axes[1, 0].pie(data[:, 2], labels=diseases, autopct='%.1f%%')
-    axes[1, 1].pie(data[:, 3], labels=diseases, autopct='%.1f%%')
-
+    w, l, at = axes[0, 0].pie(data[:, 0], labels=diseases, autopct='%.1f%%', textprops={'fontsize': 13})
+    plt.setp(l, fontsize=20)
+    w, l, at = axes[0, 1].pie(data[:, 1], labels=diseases, autopct='%.1f%%', textprops={'fontsize': 13})
+    plt.setp(l, fontsize=20)
+    w, l, at = axes[1, 0].pie(data[:, 2], labels=diseases, autopct='%.1f%%', textprops={'fontsize': 13})
+    plt.setp(l, fontsize=20)
+    w, l, at = axes[1, 1].pie(data[:, 3], labels=diseases, autopct='%.1f%%', textprops={'fontsize': 13})
+    plt.setp(l, fontsize=20)
     output_file = f'{output_path}{ssp}/{year_bin_names[year_bin_ind]}.png'
     os.makedirs(os.path.dirname(output_file), exist_ok=True)  # Create directory if it does not exist
-    plt.savefig(output_file)
+    plt.savefig(output_file, bbox_inches = 'tight', pad_inches = 0)
     # plt.show()
     plt.close(fig)
 
