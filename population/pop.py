@@ -29,7 +29,9 @@ output_path = "D:\\CMIP6_data\\Pop_Result"
 
 #### IMPORT COUNTRY FRACTIONS
 f1 = Dataset(base_path + base_file, "r")
-fractionCountry = f1.variables["fractionCountry"][:, :, :]  # countryIndex, latitude, longitude
+fractionCountry = f1.variables["fractionCountry"][
+    :, :, :
+]  # countryIndex, latitude, longitude
 latitude = f1.variables["latitude"][:]
 longitude = f1.variables["longitude"][:]
 f1.close()
@@ -40,7 +42,7 @@ fractionCountry[fractionCountry > 1.0] = 0.0
 # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
 fractionCountry = np.concatenate(
     [
-        fractionCountry[:, :, len(longitude) // 2:],
+        fractionCountry[:, :, len(longitude) // 2 :],
         fractionCountry[:, :, : len(longitude) // 2],
     ],
     axis=2,
@@ -51,7 +53,6 @@ longitude = np.arange(0.25, 360, 0.5)
 
 ssps = ["ssp1", "ssp2", "ssp3"]
 age_groups = [5, 7, 9, 10]
-age_group_names = np.array(["25+", "65+", "80+", "all"], dtype=object)
 
 # (2010 - 1950) / 5 = 12
 years = np.arange(12, 12 + 2 * 10, 2)
@@ -64,7 +65,9 @@ for ssp in range(len(ssps)):
     country_pop_ds.close()
 
     country_pop_values_all_ages = np.zeros((31, 11, 193))
-    country_pop_values_all_ages[:, 0:10, :] = country_pop_ds.data_vars["Population"].values
+    country_pop_values_all_ages[:, 0:10, :] = country_pop_ds.data_vars[
+        "Population"
+    ].values
     country_pop_values_all_ages[:, 10, :] = np.sum(country_pop_values_all_ages, axis=1)
 
     # Select age groups
@@ -88,27 +91,32 @@ for ssp in range(len(ssps)):
         pop_array = np.zeros(shape=(len(latitude), len(longitude), len(age_groups)))
         for age in range(len(age_groups)):
 
-            for j in range(len(country_pop_values[year_index][age])):  # Number of countries
+            for j in range(
+                len(country_pop_values[year_index][age])
+            ):  # Number of countries
 
                 ratio = (
-                    country_pop_values[year_index, age, j] / country_pop_sum[year_index, j]
+                    country_pop_values[year_index, age, j]
+                    / country_pop_sum[year_index, j]
                     if country_pop_sum[year_index, j] != 0
                     else 0
                 )
 
                 pop_array[:, :, age] += (
-                        fractionCountry[j, :, :] * grid_pop_values[:, :] * ratio
+                    fractionCountry[j, :, :] * grid_pop_values[:, :] * ratio
                 )
 
         # Create Dataset
         ds = xr.Dataset(
             data_vars=dict(
-                population=(["lat", "lon", "age_group"], pop_array),
+                post25=(["lat", "lon"], pop_array[:, :, 0]),
+                post60=(["lat", "lon"], pop_array[:, :, 1]),
+                post80=(["lat", "lon"], pop_array[:, :, 2]),
+                all=(["lat", "lon"], pop_array[:, :, 3]),
             ),
             coords=dict(
                 lat=latitude,
                 lon=longitude,
-                age_group=age_group_names,
             ),
             attrs=dict(
                 description="Population of 25+, 60+, and 80+ converted to a 0.5x0.5 degree grid",
