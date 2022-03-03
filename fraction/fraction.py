@@ -3,10 +3,11 @@ import pandas as pd
 import xarray as xr
 import math
 
+country = "us"
 area_path = "F:/Computer Programming/Projects/CMIP6/data/fraction/"
-area_file = "us_state_gridded.csv"
+area_file = f"{country}_state_gridded.csv"
 output_path = "F:/Computer Programming/Projects/CMIP6/data/fraction/"
-output_file = "us_state_fraction_0.5x0.5.nc"
+output_file = f"{country}_state_fraction_0.5x0.5.nc"
 
 lon_start = -179.75
 lat_start = -89.75
@@ -17,15 +18,19 @@ dy = 0.5
 
 # left lon, top lat, state names, shape area
 data = pd.read_csv(area_path + area_file, usecols=[1, 2, 10, 14])
-states = data["NAME"].values
+header_name = "NAME"
+states = data[header_name].values
 states = sorted(list(set(states)))  # remove duplicates
+states = [x for x in states if x not in ["Puerto Rico", "United States Virgin Islands"]]
+print(states)
+# print(states)
 
 # Initialize
 fraction = np.zeros((len(states), 360, 720))
 
 for i in range(len(states)):
     state = states[i]
-    wk = data[data["NAME"] == state].to_xarray()
+    wk = data[data[header_name] == state].to_xarray()
 
     for j in range(len(wk.index)):
         lat = wk["top"][j].values - 0.25
