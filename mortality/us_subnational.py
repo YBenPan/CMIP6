@@ -4,7 +4,9 @@ import xarray as xr
 import math
 from netCDF4 import Dataset
 
-fraction_path = "F:/Computer Programming/Projects/CMIP6/data/fraction/"
+country = "us"
+country_long_name = "United States"
+fraction_path = "D:/CMIP6_data/fraction/"
 fraction_file = "us_state_fraction_0.5x0.5.nc"
 base_path = "D:/CMIP6_data/Subnational Data_historical/"
 output_path = "D:/CMIP6_data/Subnational_mortality_baseline/"
@@ -60,7 +62,7 @@ for i, disease in enumerate(diseases):
     #         lat=(["lat"], latitude),
     #         lon=(["lon"], longitude),
     #     ),
-    #     attrs=dict(description="Gridded (0.5x0.5) mortality rate in the United States by age groups (all)"),
+    #     attrs=dict(description="Gridded (0.5x0.5) mortality rate in the {country_long_name} by age groups (all)"),
     # )
     # output_file = f"{disease}_subnatl_all_age_groups.nc"
     # ds.to_netcdf(output_path + output_file)
@@ -77,7 +79,7 @@ for i, disease in enumerate(diseases):
                 lon=(["lon"], longitude),
             ),
             attrs=dict(
-                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the United States by age groups (25+, "
+                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the {country_long_name} by age groups (25+, "
                             f"60+, 80+)"),
         )
     elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer"]:
@@ -90,7 +92,7 @@ for i, disease in enumerate(diseases):
                 lon=(["lon"], longitude),
             ),
             attrs=dict(
-                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the United States by age groups (25+)"),
+                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the {country_long_name} by age groups (25+)"),
         )
     elif disease == "Dementia":
         ds = xr.Dataset(
@@ -103,7 +105,7 @@ for i, disease in enumerate(diseases):
                 lon=(["lon"], longitude),
             ),
             attrs=dict(
-                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the United States by age groups (75+)"),
+                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the {country_long_name} by age groups (75+)"),
         )
 
     output_file = f"{disease}_subnatl.nc"

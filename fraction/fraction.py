@@ -3,10 +3,16 @@ import pandas as pd
 import xarray as xr
 import math
 
+#### COUNTRY-SPECIFIC INPUT
+header_name = "NAME"
 country = "us"
-area_path = "F:/Computer Programming/Projects/CMIP6/data/fraction/"
+country_long_name = "United States"
+ignored_states = ["Puerto Rico", "United States Virgin Islands"]
+
+#### PATH SETTINGS
+area_path = "D:/CMIP6_data/fraction/"
 area_file = f"{country}_state_gridded.csv"
-output_path = "F:/Computer Programming/Projects/CMIP6/data/fraction/"
+output_path = "D:/CMIP6_data/fraction/"
 output_file = f"{country}_state_fraction_0.5x0.5.nc"
 
 lon_start = -179.75
@@ -18,11 +24,9 @@ dy = 0.5
 
 # left lon, top lat, state names, shape area
 data = pd.read_csv(area_path + area_file, usecols=[1, 2, 10, 14])
-header_name = "NAME"
 states = data[header_name].values
 states = sorted(list(set(states)))  # remove duplicates
-states = [x for x in states if x not in ["Puerto Rico", "United States Virgin Islands"]]
-print(states)
+states = [x for x in states if x not in ignored_states]
 # print(states)
 
 # Initialize
@@ -61,7 +65,7 @@ ds = xr.Dataset(
         lat=(["lat"], lat_arr),
         lon=(["lon"], lon_arr),
     ),
-    attrs=dict(description="U.S. state fractions on a 0.5x0.5 deg grid"),
+    attrs=dict(description=f"{country_long_name} state fractions on a 0.5x0.5 deg grid"),
 )
 ds.to_netcdf(output_path + output_file)
 ds.close()
