@@ -3,17 +3,20 @@ import pandas as pd
 import xarray as xr
 import math
 
-#### COUNTRY-SPECIFIC INPUT
-header_name = "NAME"
-country = "us"
-country_long_name = "United States"
-ignored_states = ["Puerto Rico", "United States Virgin Islands"]
+#### COUNTRY-SPECIFIC INPUT ####
+header_name = "ADM1_EN"
+country = "japan"
+country_long_name = "Japan"
+# left lon, top lat, state names, shape area
+cols = [5, 6, 2, 9]
+#################################
 
-#### PATH SETTINGS
+#### PATH SETTINGS ####
 area_path = "D:/CMIP6_data/fraction/"
 area_file = f"{country}_state_gridded.csv"
 output_path = "D:/CMIP6_data/fraction/"
 output_file = f"{country}_state_fraction_0.5x0.5.nc"
+#######################
 
 lon_start = -179.75
 lat_start = -89.75
@@ -22,11 +25,9 @@ deg2rad = math.pi / 180.0
 dx = 0.5
 dy = 0.5
 
-# left lon, top lat, state names, shape area
-data = pd.read_csv(area_path + area_file, usecols=[1, 2, 10, 14])
+data = pd.read_csv(area_path + area_file, usecols=cols)
 states = data[header_name].values
 states = sorted(list(set(states)))  # remove duplicates
-states = [x for x in states if x not in ignored_states]
 # print(states)
 
 # Initialize
@@ -61,7 +62,7 @@ ds = xr.Dataset(
         fractionState=(["state", "lat", "lon"], fraction),
     ),
     coords=dict(
-        state=(["state"], states),
+        state=(["state"], [x.replace(u'\xa0', '') for x in states]),
         lat=(["lat"], lat_arr),
         lon=(["lon"], lon_arr),
     ),

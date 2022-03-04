@@ -4,10 +4,10 @@ import xarray as xr
 import math
 from netCDF4 import Dataset
 
-country = "us"
-country_long_name = "United States"
+country = "japan"
+country_long_name = "Japan"
 fraction_path = "D:/CMIP6_data/fraction/"
-fraction_file = "us_state_fraction_0.5x0.5.nc"
+fraction_file = f"{country}_state_fraction_0.5x0.5.nc"
 base_path = "D:/CMIP6_data/Subnational Data_historical/"
 output_path = "D:/CMIP6_data/Subnational_mortality_baseline/"
 
@@ -23,6 +23,7 @@ fractionState = f1.variables["fractionState"][
 latitude = f1.variables["lat"][:]
 longitude = f1.variables["lon"][:]
 states = f1.variables["state"][:]
+# print(states)
 f1.close()
 
 for i, disease in enumerate(diseases):
@@ -49,6 +50,7 @@ for i, disease in enumerate(diseases):
                 mort = wk[(wk["age_name"] == age_group) & (wk["location_name"] == state)]["val"].values[0]
             except IndexError:
                 print(age_group, state)
+                break
 
             # data[k, :, :] += (fractionState[j, :, :] / np.sum(fractionState[j, :, :])) * mort
             data[k, :, :] += fractionState[j, :, :] * mort
@@ -79,7 +81,7 @@ for i, disease in enumerate(diseases):
                 lon=(["lon"], longitude),
             ),
             attrs=dict(
-                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the {country_long_name} by age groups (25+, "
+                description=f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups (25+, "
                             f"60+, 80+)"),
         )
     elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer"]:
@@ -92,7 +94,7 @@ for i, disease in enumerate(diseases):
                 lon=(["lon"], longitude),
             ),
             attrs=dict(
-                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the {country_long_name} by age groups (25+)"),
+                description=f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups (25+)"),
         )
     elif disease == "Dementia":
         ds = xr.Dataset(
@@ -105,10 +107,10 @@ for i, disease in enumerate(diseases):
                 lon=(["lon"], longitude),
             ),
             attrs=dict(
-                description=f"Gridded (0.5x0.5) mortality rate of {disease} in the {country_long_name} by age groups (75+)"),
+                description=f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups (75+)"),
         )
 
-    output_file = f"{disease}_subnatl.nc"
+    output_file = f"{country}_{disease}_subnatl.nc"
     ds.to_netcdf(output_path + output_file)
     ds.close()
 
