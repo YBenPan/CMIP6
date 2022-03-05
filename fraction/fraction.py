@@ -9,6 +9,10 @@ country = "mexico"
 country_long_name = "Mexico"
 # left lon, top lat, state names, shape area
 cols = [0, 1, 2, 3]
+to_be_renamed = {
+    "Veracruz": "Veracruz de Ignacio de la Llave",
+    "Michoacán": "Michoacán de Ocampo",
+}
 #################################
 
 #### PATH SETTINGS ####
@@ -53,8 +57,12 @@ fraction[:, :, :] = fraction[:, :, :] / np.nanmax(
     fraction[:, :, :]
 )  # almost negligible normalization. max = 1.008
 
+# Create output arrays
 lat_arr = np.arange(-89.75, 90.25, 0.5)
 lon_arr = np.arange(-179.75, 180.25, 0.5)
+output_states = [x.replace(u'\xa0', '') for x in states]
+output_states = [to_be_renamed[x] if x in to_be_renamed else x for x in states]
+# print(output_states)
 
 # Output as netCDF
 ds = xr.Dataset(
@@ -62,7 +70,7 @@ ds = xr.Dataset(
         fractionState=(["state", "lat", "lon"], fraction),
     ),
     coords=dict(
-        state=(["state"], [x.replace(u'\xa0', '') for x in states]),
+        state=(["state"], output_states),
         lat=(["lat"], lat_arr),
         lon=(["lon"], lon_arr),
     ),
