@@ -4,11 +4,11 @@ import xarray as xr
 import math
 
 #### COUNTRY-SPECIFIC INPUT ####
-header_name = "ADM1_EN"
-country = "japan"
-country_long_name = "Japan"
+header_name = "NAME_1"
+country = "mexico"
+country_long_name = "Mexico"
 # left lon, top lat, state names, shape area
-cols = [5, 6, 2, 9]
+cols = [0, 1, 2, 3]
 #################################
 
 #### PATH SETTINGS ####

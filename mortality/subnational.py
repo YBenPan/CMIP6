@@ -4,8 +4,8 @@ import xarray as xr
 import math
 from netCDF4 import Dataset
 
-country = "japan"
-country_long_name = "Japan"
+country = "mexico"
+country_long_name = "Mexico"
 fraction_path = "D:/CMIP6_data/fraction/"
 fraction_file = f"{country}_state_fraction_0.5x0.5.nc"
 base_path = "D:/CMIP6_data/Subnational Data_historical/"
