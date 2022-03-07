@@ -4,8 +4,8 @@ import xarray as xr
 import math
 from netCDF4 import Dataset
 
-country = "mexico"
-country_long_name = "Mexico"
+country = "indonesia"
+country_long_name = "Indonesia"
 fraction_path = "D:/CMIP6_data/fraction/"
 fraction_file = f"{country}_state_fraction_0.5x0.5.nc"
 base_path = "D:/CMIP6_data/Subnational Data_historical/"
@@ -22,8 +22,8 @@ fractionState = f1.variables["fractionState"][
                 ]  # stateIndex, latitude, longitude
 latitude = f1.variables["lat"][:]
 longitude = f1.variables["lon"][:]
-states = f1.variables["state"][:]
-# print(states)
+states = sorted(f1.variables["state"][:])
+# print(*states, sep='\n')
 f1.close()
 
 for i, disease in enumerate(diseases):
@@ -111,7 +111,7 @@ for i, disease in enumerate(diseases):
         )
 
     output_file = f"{country}_{disease}_subnatl.nc"
-    ds.to_netcdf(output_path + output_file)
+    # ds.to_netcdf(output_path + output_file)
     ds.close()
 
     print(f"DONE: {disease}")

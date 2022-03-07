@@ -5,13 +5,34 @@ import math
 
 #### COUNTRY-SPECIFIC INPUT ####
 header_name = "NAME_1"
-country = "mexico"
-country_long_name = "Mexico"
+country = "indonesia"
+country_long_name = "Indonesia"
 # left lon, top lat, state names, shape area
 cols = [0, 1, 2, 3]
 to_be_renamed = {
-    "Veracruz": "Veracruz de Ignacio de la Llave",
-    "Michoacán": "Michoacán de Ocampo",
+    "Bangka Belitung": "Bangka-Belitung Islands",
+    "Jakarta Raya": "Jakarta",
+    "Jawa Barat": "West Java",
+    "Jawa Tengah": "Central Java",
+    "Jawa Timur": "East Java",
+    "Kalimantan Barat": "West Kalimantan",
+    "Kalimantan Selatan": "South Kalimantan",
+    "Kalimantan Tengah": "Central Kalimantan",
+    "Kalimantan Timur": "East Kalimantan",
+    "Kalimantan Utara": "North Kalimantan",
+    "Kepulauan Riau": "Riau Islands",
+    "Maluku Utara": "North Maluku",
+    "Nusa Tenggara Barat": "West Nusa Tenggara",
+    "Nusa Tenggara Timur": "East Nusa Tenggara",
+    "Papua Barat": "West Papua",
+    "Sulawesi Barat": "West Sulawesi",
+    "Sulawesi Selatan": "South Sulawesi",
+    "Sulawesi Tengah": "Central Sulawesi",
+    "Sulawesi Tenggara": "Southeast Sulawesi",
+    "Sulawesi Utara": "North Sulawesi",
+    "Sumatera Barat": "West Sumatra",
+    "Sumatera Selatan": "South Sumatra",
+    "Sumatera Utara": "North Sumatra",
 }
 #################################
 
