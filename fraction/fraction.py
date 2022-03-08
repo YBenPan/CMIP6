@@ -4,16 +4,20 @@ import xarray as xr
 import math
 
 #### COUNTRY-SPECIFIC INPUT ####
-header_name = "ADM1_EN"
-country = "japan"
-country_long_name = "Japan"
+header_name = "NAME"
+country = "uk"
+country_long_name = "the United Kingdom"
 # left lon, top lat, state names, shape area
 cols = [0, 1, 2, 3]
 to_be_renamed = {
-    "Kyoto": "Kyōto",
-    "Tokyo": "Tōkyō",
-    "Osaka": "Ōsaka",
-    "Hokkaido": "Hokkaidō",
+    "London": "Greater London",
+    "North East (England)": "North East England",
+    "North West (England)": "North West England",
+    "South East (England)": "South East England",
+    "South West (England)": "South West England",
+    "East Midlands (England)": "East Midlands",
+    "West Midlands (England)": "West Midlands",
+    "Yorkshire and The Humber": "Yorkshire and the Humber",
 }
 #################################
 
@@ -64,7 +68,7 @@ lat_arr = np.arange(-89.75, 90.25, 0.5)
 lon_arr = np.arange(-179.75, 180.25, 0.5)
 output_states = [x.replace(u'\xa0', '') for x in states]
 output_states = [to_be_renamed[x] if x in to_be_renamed else x for x in output_states]
-# print(output_states)
+print(output_states)
 
 # Output as netCDF
 ds = xr.Dataset(
