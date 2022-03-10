@@ -4,8 +4,8 @@ import xarray as xr
 import math
 from netCDF4 import Dataset
 
-country = "brazil"
-country_long_name = "Brazil"
+country = "kenya"
+country_long_name = "Kenya"
 fraction_path = "D:/CMIP6_data/fraction/"
 fraction_file = f"{country}_state_fraction_0.5x0.5.nc"
 base_path = "D:/CMIP6_data/Subnational Data_historical/"
@@ -120,7 +120,7 @@ for i, disease in enumerate(diseases):
 def find_diff():
     base_file = f"{diseases[0]}_Subnatl.csv"
     data = pd.read_csv(base_path + base_file, usecols=[2, 3])
-    data = data[(data["location_id"].isin(np.arange(4750, 4777)))]
+    data = data[(data["location_id"].isin(np.arange(35617, 35664)))]
     state_names = sorted(list(set(data["location_name"].values)))
     for state in state_names:
         if state not in states:

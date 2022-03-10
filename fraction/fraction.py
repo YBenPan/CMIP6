@@ -4,13 +4,20 @@ import xarray as xr
 import math
 
 #### COUNTRY-SPECIFIC INPUT ####
-header_name = "NAME_1"
-country = "brazil"
-country_long_name = "Brazil"
+header_name = "ADM1_EN"
+country = "kenya"
+country_long_name = "Kenya"
 # left lon, top lat, state names, shape area
 cols = [0, 1, 2, 3]
 to_be_renamed = {
-    "Piauí": "Piaui",
+    "Homa Bay": "HomaBay",
+    "Taita Taveta": "TaitaTaveta",
+    "Tana River": "TanaRiver",
+    "Tharaka Nithi": "TharakaNithi",
+    "Trans Nzoia": "TransNzoia",
+    "Uasin Gishu": "UasinGishu",
+    "West Pokot": "WestPokot",
+    "Tharaka-Nithi": "TharakaNithi",
 }
 #################################
 
