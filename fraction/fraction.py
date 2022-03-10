@@ -4,20 +4,13 @@ import xarray as xr
 import math
 
 #### COUNTRY-SPECIFIC INPUT ####
-header_name = "NAME"
-country = "uk"
-country_long_name = "the United Kingdom"
+header_name = "NAME_1"
+country = "brazil"
+country_long_name = "Brazil"
 # left lon, top lat, state names, shape area
 cols = [0, 1, 2, 3]
 to_be_renamed = {
-    "London": "Greater London",
-    "North East (England)": "North East England",
-    "North West (England)": "North West England",
-    "South East (England)": "South East England",
-    "South West (England)": "South West England",
-    "East Midlands (England)": "East Midlands",
-    "West Midlands (England)": "West Midlands",
-    "Yorkshire and The Humber": "Yorkshire and the Humber",
+    "Piauí": "Piaui",
 }
 #################################
 
