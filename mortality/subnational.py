@@ -32,16 +32,17 @@ def combined_output():
     fractionCountry[fractionCountry < 0.0] = 0.0
     fractionCountry[fractionCountry > 1.0] = 0.0
     # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
-    fractionCountry = np.concatenate(
-        [
-            fractionCountry[:, :, len(longitude) // 2:],
-            fractionCountry[:, :, : len(longitude) // 2],
-        ],
-        axis=2,
-    )
-    longitude = np.arange(0.25, 360, 0.5)
+    # fractionCountry = np.concatenate(
+    #     [
+    #         fractionCountry[:, :, len(longitude) // 2:],
+    #         fractionCountry[:, :, : len(longitude) // 2],
+    #     ],
+    #     axis=2,
+    # )
+    # longitude = np.arange(0.25, 360, 0.5)
 
     national_baseline_path = "D:/CMIP6_data/Mortality_baseline/"
+    subnational_baseline_path = "D:/CMIP6_data/Subnational_mortality_baseline/"
     output_path = "D:/CMIP6_data/Combined_mortality_baseline/"
     # Countries with subnational data
     countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "uk", "us"]
@@ -61,40 +62,64 @@ def combined_output():
         # Loop through countries
         for j in np.arange(0, 193):
 
+            # Skip country if we have subnational data of it
+            if j in country_ids:
+                continue
+
             for k, age_group in enumerate(age_groups):
 
                 # retrieve mortality corresponding to correct age group and state
                 try:
-                    # mort = wk[(wk["age_name"] == age_group) & (wk["location_name"] == state)]["val"].values[0]
                     tmp = wk.iloc[np.arange(j * 13, j * 13 + 13)]
                     mort = tmp[(tmp["age_name"] == age_group)]["val"].values[0]
                 except IndexError:
                     print(age_group, j)
                     break
 
-                # data[k, :, :] += (fractionState[j, :, :] / np.sum(fractionState[j, :, :])) * mort
                 data[k, :, :] += fractionCountry[j, :, :] * mort
 
-        # Output
         if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
+            post25 = data[0]
+            post60 = np.sum(data[8:], axis=0)
+            post80 = data[12]
+
+            # Add in subnational data
+            for country in countries:
+                subnational_baseline_file = f"{country}_{disease}_subnatl.nc"
+                subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
+                subnatl_data = subnatl_wk.data_vars
+                post25[:, :] += subnatl_data["post25"].values
+                post60[:, :] += subnatl_data["post60"].values
+                post80[:, :] += subnatl_data["post80"].values
+
             ds = xr.Dataset(
                 data_vars=dict(
-                    post25=(["lat", "lon"], data[0]),
-                    post60=(["lat", "lon"], np.sum(data[8:], axis=0)),
-                    post80=(["lat", "lon"], data[12]),
+                    post25=(["lat", "lon"], post25),
+                    post60=(["lat", "lon"], post60),
+                    post80=(["lat", "lon"], post80),
                 ),
                 coords=dict(
                     lat=(["lat"], latitude),
                     lon=(["lon"], longitude),
                 ),
                 attrs=dict(
-                    description=f"Gridded (0.5x0.5) mortality rate of {disease} worldwide by age groups (25+, "
-                                f"60+, 80+)"),
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+, "
+                                f"60+, 80+), with subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, "
+                                f"UK, and US"),
             )
         elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer"]:
+            post25 = data[0]
+
+            # Add in subnational data
+            for country in countries:
+                subnational_baseline_file = f"{country}_{disease}_subnatl.nc"
+                subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
+                subnatl_data = subnatl_wk.data_vars
+                post25[:, :] += subnatl_data["post25"].values
+
             ds = xr.Dataset(
                 data_vars=dict(
-                    post25=(["lat", "lon"], data[0]),
+                    post25=(["lat", "lon"], post25),
                 ),
                 coords=dict(
                     lat=(["lat"], latitude),
@@ -102,20 +127,34 @@ def combined_output():
 
                 ),
                 attrs=dict(
-                    description=f"Gridded (0.5x0.5) mortality rate of {disease} worldwide by age groups (25+)"),
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+), with "
+                                f"subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, "
+                                f"UK, and US"),
             )
         elif disease == "Dementia":
+            post65 = np.sum(data[[0, 2]], axis=0)
+            post75 = data[2]
+
+            # Add in subnational data
+            for country in countries:
+                subnational_baseline_file = f"{country}_{disease}_subnatl.nc"
+                subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
+                subnatl_data = subnatl_wk.data_vars
+                post65[:, :] += subnatl_data["post65"].values
+                post75[:, :] += subnatl_data["post75"].values
             ds = xr.Dataset(
                 data_vars=dict(
-                    post65=(["lat", "lon"], np.sum(data[[0, 2]], axis=0)),
-                    post75=(["lat", "lon"], data[2]),
+                    post65=(["lat", "lon"], post65),
+                    post75=(["lat", "lon"], post75),
                 ),
                 coords=dict(
                     lat=(["lat"], latitude),
                     lon=(["lon"], longitude),
                 ),
                 attrs=dict(
-                    description=f"Gridded (0.5x0.5) mortality rate of {disease} worldwide by age groups (75+)"),
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (65+, 75+), with "
+                                f"subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, "
+                                f"UK, and US"),
             )
 
         output_file = f"{disease}_combined.nc"
@@ -228,5 +267,6 @@ def find_diff(states):
     for state in state_names:
         if state not in states:
             print(state)
+
 
 combined_output()
