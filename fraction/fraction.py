@@ -9,7 +9,8 @@ import math
 ####################################################################################################
 
 countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "us", "uk"]
-
+area_path = "D:/CMIP6_data/fraction/"
+output_path = "D:/CMIP6_data/fraction/"
 
 def subnational_output():
     """
@@ -34,10 +35,8 @@ def subnational_output():
     }
     #################################
 
-    #### PATH SETTINGS ####
-    area_path = "D:/CMIP6_data/fraction/"
+    #### FILE SETTINGS ####
     area_file = f"{country}_state_gridded.csv"
-    output_path = "D:/CMIP6_data/fraction/"
     output_file = f"{country}_state_fraction_0.5x0.5.nc"
     #######################
 
@@ -97,3 +96,6 @@ def subnational_output():
     )
     ds.to_netcdf(output_path + output_file)
     ds.close()
+
+
+subnational_output()
