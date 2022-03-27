@@ -141,7 +141,7 @@ def combined_output():
                 attrs=dict(
                     description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+, "
                                 f"60+, 80+), with subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, "
-                                f"UK, and US"),
+                                f"UK, and US in 2015"),
             )
         elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer"]:
             post25 = data[0]
@@ -165,7 +165,7 @@ def combined_output():
                 attrs=dict(
                     description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+), with "
                                 f"subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, "
-                                f"UK, and US"),
+                                f"UK, and US in 2015"),
             )
         elif disease == "Dementia":
             post65 = np.sum(data[[0, 2]], axis=0)
@@ -190,7 +190,7 @@ def combined_output():
                 attrs=dict(
                     description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (65+, 75+), with "
                                 f"subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, "
-                                f"UK, and US"),
+                                f"UK, and US in 2015"),
             )
 
         output_file = f"{disease}_combined.nc"
