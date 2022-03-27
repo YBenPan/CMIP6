@@ -13,7 +13,33 @@ base_path = "D:/CMIP6_data/Subnational Data_historical/"
 
 diseases = ["COPD", "Dementia", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
             "NonCommunicableDiseases", "Stroke"]
-# diseases = ["Dementia"]
+# diseases = ["NonCommunicableDiseases"]
+
+
+def rename_helper(df, to_be_dropped, to_be_renamed):
+    location_names = df["location_name"].drop_duplicates().tolist()
+
+    # Drop countries
+    location_names = [x for x in location_names if x not in to_be_dropped]
+    df = df.set_index("location_name")
+    df = df.loc[location_names]
+
+    # Rename countries
+    labels = df.index.values
+    new_labels = list(
+        map(lambda x: to_be_renamed[x] if x in to_be_renamed else x, labels)
+    )
+
+    df = df.set_axis(new_labels, axis="index")
+    df.index.name = "location_name"
+    df = df.reset_index()
+    df = df.sort_values(by=["location_name", "year", "age_name"])
+    df = df.reset_index()
+    df = df.drop(columns=["index"])
+
+    # print(df)
+
+    return df
 
 
 def combined_output():
@@ -41,20 +67,30 @@ def combined_output():
     # )
     # longitude = np.arange(0.25, 360, 0.5)
 
-    national_baseline_path = "D:/CMIP6_data/Mortality_baseline/"
+    national_baseline_path = "D:/CMIP6_data/National Data_historical/"
     subnational_baseline_path = "D:/CMIP6_data/Subnational_mortality_baseline/"
     output_path = "D:/CMIP6_data/Combined_mortality_baseline/"
     # Countries with subnational data
     countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "uk", "us"]
-    country_ids = [23, 78, 85, 88, 109, 182, 183]
+    country_ids = [23, 78, 85, 88, 109, 181, 183]
+    to_be_dropped = ["American Samoa", "Bermuda", "Greenland", "Guam", "Montenegro", "Northern Mariana Islands", "Palestine", "Taiwan (Province of China)", "Tokelau", "United States Virgin Islands", "South Sudan"]
+    to_be_renamed = {
+        "Cabo Verde": "Cape Verde",
+        "Eswatini": "Swaziland",
+        "North Macedonia": "ThbMacedonia", # ensure correct placement between Thailand and Timor-Leste
+        "Puerto Rico": "ZZPuerto Rico",
+    }
 
     for disease in diseases:
-        national_baseline_file = f"{disease}_2015.csv"
+        national_baseline_file = f"{disease}.csv"
         try:
-            data = pd.read_csv(national_baseline_path + national_baseline_file, usecols=[3, 7, 11, 13])
+            data = pd.read_csv(national_baseline_path + national_baseline_file, usecols=[3, 7, 11, 12, 13])
         except:
             continue
-        wk = data[data["metric_name"] == "Rate"]
+        data = rename_helper(data, to_be_dropped, to_be_renamed)
+        wk = data[(~data["location_name"].isin(to_be_dropped)) & (data["year"] == 2015) & (data["metric_name"] == "Rate")]
+        wk = wk.drop(columns=["metric_name", "year"])
+        wk = wk.sort_values(['location_name', 'age_name'])
 
         age_groups = sorted(list(set(wk['age_name'].values)))
         data = np.zeros((len(age_groups), len(latitude), len(longitude)))
@@ -70,7 +106,7 @@ def combined_output():
 
                 # retrieve mortality corresponding to correct age group and state
                 try:
-                    tmp = wk.iloc[np.arange(j * 13, j * 13 + 13)]
+                    tmp = wk.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
                     mort = tmp[(tmp["age_name"] == age_group)]["val"].values[0]
                 except IndexError:
                     print(age_group, j)
