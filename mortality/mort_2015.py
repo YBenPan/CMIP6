@@ -12,8 +12,8 @@ fraction_path = "D:/CMIP6_data/fraction/"
 base_path = "D:/CMIP6_data/Subnational Data_historical/"
 
 diseases = ["COPD", "Dementia", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
-            "NonCommunicableDiseases", "Stroke"]
-# diseases = ["NonCommunicableDiseases"]
+            "NonCommunicableDiseases", "Stroke", "Diabetes"]
+data_types = ["val", "upper", "lower"]
 
 
 def rename_helper(df, to_be_dropped, to_be_renamed):
@@ -67,17 +67,19 @@ def combined_output():
     # )
     # longitude = np.arange(0.25, 360, 0.5)
 
-    national_baseline_path = "D:/CMIP6_data/National Data_historical/"
-    subnational_baseline_path = "D:/CMIP6_data/Subnational_mortality_baseline/"
-    output_path = "D:/CMIP6_data/Combined_mortality_baseline/"
+    national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical/"
+    subnational_baseline_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2015/"
+    output_path = "D:/CMIP6_data/Mortality/Output/Combined_mortality_baseline_2015/"
     # Countries with subnational data
     countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "uk", "us"]
     country_ids = [23, 78, 85, 88, 109, 181, 183]
-    to_be_dropped = ["American Samoa", "Bermuda", "Greenland", "Guam", "Montenegro", "Northern Mariana Islands", "Palestine", "Taiwan (Province of China)", "Tokelau", "United States Virgin Islands", "South Sudan"]
+    to_be_dropped = ["American Samoa", "Bermuda", "Greenland", "Guam", "Montenegro", "Northern Mariana Islands",
+                     "Palestine", "Taiwan (Province of China)", "Tokelau", "United States Virgin Islands",
+                     "South Sudan"]
     to_be_renamed = {
         "Cabo Verde": "Cape Verde",
         "Eswatini": "Swaziland",
-        "North Macedonia": "ThbMacedonia", # ensure correct placement between Thailand and Timor-Leste
+        "North Macedonia": "ThbMacedonia",  # ensure correct placement between Thailand and Timor-Leste
         "Puerto Rico": "ZZPuerto Rico",
     }
 
@@ -88,7 +90,8 @@ def combined_output():
         except:
             continue
         data = rename_helper(data, to_be_dropped, to_be_renamed)
-        wk = data[(~data["location_name"].isin(to_be_dropped)) & (data["year"] == 2015) & (data["metric_name"] == "Rate")]
+        wk = data[
+            (~data["location_name"].isin(to_be_dropped)) & (data["year"] == 2015) & (data["metric_name"] == "Rate")]
         wk = wk.drop(columns=["metric_name", "year"])
         wk = wk.sort_values(['location_name', 'age_name'])
 
@@ -114,10 +117,29 @@ def combined_output():
 
                 data[k, :, :] += fractionCountry[j, :, :] * mort
 
+        national_output_path = "D:/CMIP6_data/Mortality/Output/National_mortality_baseline_2015/"
+        output_file = f"{disease}.nc"
         if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
             post25 = data[0]
             post60 = np.sum(data[8:], axis=0)
             post80 = data[12]
+
+            ds = xr.Dataset(
+                data_vars=dict(
+                    post25=(["lat", "lon"], post25),
+                    post60=(["lat", "lon"], post60),
+                    post80=(["lat", "lon"], post80),
+                ),
+                coords=dict(
+                    lat=(["lat"], latitude),
+                    lon=(["lon"], longitude),
+                ),
+                attrs=dict(
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+, "
+                                f"60+, 80+) in 2015, with national-level data only"),
+            )
+            ds.to_netcdf(national_output_path + output_file)
+            ds.close()
 
             # Add in subnational data
             for country in countries:
@@ -146,6 +168,20 @@ def combined_output():
         elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer"]:
             post25 = data[0]
 
+            ds = xr.Dataset(
+                data_vars=dict(
+                    post25=(["lat", "lon"], post25),
+                ),
+                coords=dict(
+                    lat=(["lat"], latitude),
+                    lon=(["lon"], longitude),
+                ),
+                attrs=dict(
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+) in 2015, with national-level data only"),
+            )
+            ds.to_netcdf(national_output_path + output_file)
+            ds.close()
+
             # Add in subnational data
             for country in countries:
                 subnational_baseline_file = f"{country}_{disease}_subnatl.nc"
@@ -160,7 +196,6 @@ def combined_output():
                 coords=dict(
                     lat=(["lat"], latitude),
                     lon=(["lon"], longitude),
-
                 ),
                 attrs=dict(
                     description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+), with "
@@ -170,6 +205,22 @@ def combined_output():
         elif disease == "Dementia":
             post65 = np.sum(data[[0, 2]], axis=0)
             post75 = data[2]
+
+            ds = xr.Dataset(
+                data_vars=dict(
+                    post65=(["lat", "lon"], post65),
+                    post75=(["lat", "lon"], post75),
+                ),
+                coords=dict(
+                    lat=(["lat"], latitude),
+                    lon=(["lon"], longitude),
+                ),
+                attrs=dict(
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (65+, 75+) in 2015, with national-level data only"
+                )
+            )
+            ds.to_netcdf(national_output_path + output_file)
+            ds.close()
 
             # Add in subnational data
             for country in countries:
@@ -193,8 +244,153 @@ def combined_output():
                                 f"UK, and US in 2015"),
             )
 
-        output_file = f"{disease}_combined.nc"
         ds.to_netcdf(output_path + output_file)
+        ds.close()
+
+        print(f"DONE: {disease}")
+
+
+def national_output():
+
+    """Outputs gridded mortality baseline for all countries"""
+
+    # Import country fraction
+    fraction_file = f"countryFractions_2010_0.5x0.5.nc"
+    f1 = Dataset(fraction_path + fraction_file, "r")
+    fractionCountry = f1.variables["fractionCountry"][
+                      :, :, :
+                      ]  # countryIndex, latitude, longitude
+    latitude = f1.variables["latitude"][:]
+    longitude = f1.variables["longitude"][:]
+    f1.close()
+
+    fractionCountry[fractionCountry < 0.0] = 0.0
+    fractionCountry[fractionCountry > 1.0] = 0.0
+
+    national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical/"
+    output_path = "D:/CMIP6_data/Mortality/Output/Combined_mortality_baseline_2015/"
+    to_be_dropped = ["American Samoa", "Bermuda", "Greenland", "Guam", "Montenegro", "Northern Mariana Islands",
+                     "Palestine", "Taiwan (Province of China)", "Tokelau", "United States Virgin Islands",
+                     "South Sudan"]
+    to_be_renamed = {
+        "Cabo Verde": "Cape Verde",
+        "Eswatini": "Swaziland",
+        "North Macedonia": "ThbMacedonia",  # ensure correct placement between Thailand and Timor-Leste
+        "Puerto Rico": "ZZPuerto Rico",
+    }
+
+    for disease in diseases:
+        national_baseline_file = f"{disease}.csv"
+        try:
+            data = pd.read_csv(national_baseline_path + national_baseline_file, usecols=[3, 7, 11, 12, 13, 14, 15])
+        except:
+            continue
+        data = rename_helper(data, to_be_dropped, to_be_renamed)
+        wk = data[
+            (~data["location_name"].isin(to_be_dropped)) & (data["year"] == 2015) & (data["metric_name"] == "Rate")]
+        wk = wk.drop(columns=["metric_name", "year"])
+        wk = wk.sort_values(['location_name', 'age_name'])
+
+        age_groups = sorted(list(set(wk['age_name'].values)))
+        data = np.zeros((len(age_groups), len(data_types), len(latitude), len(longitude)))
+
+        # Loop through countries
+        for j in np.arange(0, 193):
+
+            for k, age_group in enumerate(age_groups):
+
+                for p, data_type in enumerate(data_types):
+
+                    # retrieve mortality corresponding to correct age group and state
+                    try:
+                        tmp = wk.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
+                        mort = tmp[(tmp["age_name"] == age_group)][data_type].values[0]
+                    except IndexError:
+                        print(age_group, j)
+                        break
+
+                    data[k, p, :, :] += fractionCountry[j, :, :] * mort
+
+        national_output_path = "D:/CMIP6_data/Mortality/Output/National_mortality_baseline_2015/"
+        output_file = f"{disease}.nc"
+        if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
+            post25_mean = data[0][0]
+            post25_upper = data[0][1]
+            post25_lower = data[0][2]
+            post60_mean = np.sum(data[8:], axis=0)[0]
+            post60_upper = np.sum(data[8:], axis=0)[1]
+            post60_lower = np.sum(data[8:], axis=0)[2]
+            post80_mean = data[12][0]
+            post80_upper = data[12][1]
+            post80_lower = data[12][2]
+
+            ds = xr.Dataset(
+                data_vars=dict(
+                    post25_mean=(["lat", "lon"], post25_mean),
+                    post25_upper=(["lat", "lon"], post25_upper),
+                    post25_lower=(["lat", "lon"], post25_lower),
+                    post60_mean=(["lat", "lon"], post60_mean),
+                    post60_upper=(["lat", "lon"], post60_upper),
+                    post60_lower=(["lat", "lon"], post60_lower),
+                    post80_mean=(["lat", "lon"], post80_mean),
+                    post80_upper=(["lat", "lon"], post80_upper),
+                    post80_lower=(["lat", "lon"], post80_lower),
+                ),
+                coords=dict(
+                    lat=(["lat"], latitude),
+                    lon=(["lon"], longitude),
+                ),
+                attrs=dict(
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+, "
+                                f"60+, 80+) in 2015, with national-level data only"),
+            )
+
+        elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer", "Diabetes"]:
+            post25_mean = data[0][0]
+            post25_upper = data[0][1]
+            post25_lower = data[0][2]
+
+            ds = xr.Dataset(
+                data_vars=dict(
+                    post25_mean=(["lat", "lon"], post25_mean),
+                    post25_upper=(["lat", "lon"], post25_upper),
+                    post25_lower=(["lat", "lon"], post25_lower),
+                ),
+                coords=dict(
+                    lat=(["lat"], latitude),
+                    lon=(["lon"], longitude),
+                ),
+                attrs=dict(
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (25+) in 2015, with national-level data only"),
+            )
+
+        elif disease == "Dementia":
+            post65_mean = np.sum(data[[0, 2]], axis=0)[0]
+            post65_upper = np.sum(data[[0, 2]], axis=0)[1]
+            post65_lower = np.sum(data[[0, 2]], axis=0)[2]
+            post75_mean = data[2][0]
+            post75_upper = data[2][1]
+            post75_lower = data[2][2]
+
+            ds = xr.Dataset(
+                data_vars=dict(
+                    post65_mean=(["lat", "lon"], post65_mean),
+                    post65_upper=(["lat", "lon"], post65_upper),
+                    post65_lower=(["lat", "lon"], post65_lower),
+                    post75_mean=(["lat", "lon"], post75_mean),
+                    post75_upper=(["lat", "lon"], post75_upper),
+                    post75_lower=(["lat", "lon"], post75_lower),
+                ),
+                coords=dict(
+                    lat=(["lat"], latitude),
+                    lon=(["lon"], longitude),
+                ),
+                attrs=dict(
+                    description=f"Gridded (0.5x0.5) mortality rate of {disease} by age groups (65+, 75+) in 2015, with national-level data only"
+                )
+            )
+
+        ds.to_netcdf(national_output_path + output_file)
         ds.close()
 
         print(f"DONE: {disease}")
@@ -263,7 +459,7 @@ def subnational_output():
                         description=f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups (25+, "
                                     f"60+, 80+)"),
                 )
-            elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer"]:
+            elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer", "Diabetes"]:
                 ds = xr.Dataset(
                     data_vars=dict(
                         post25=(["lat", "lon"], data[0]),
@@ -306,4 +502,9 @@ def find_diff(states):
             print(state)
 
 
-combined_output()
+def main():
+    national_output()
+
+
+if __name__ == "__main__":
+    main()
