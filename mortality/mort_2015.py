@@ -46,6 +46,7 @@ to_be_renamed = {
 
 
 def rename_helper(df, to_be_dropped, to_be_renamed):
+    """Drop and rename countries"""
     location_names = df["location_name"].drop_duplicates().tolist()
 
     # Drop countries
@@ -71,7 +72,9 @@ def rename_helper(df, to_be_dropped, to_be_renamed):
     return df
 
 
+# noinspection SpellCheckingInspection
 def gen_output(disease, data, output_description, is_combined=False):
+    """Generate output Dataset"""
     if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
         post25_mean = data[0][0]
         post25_upper = data[0][1]
@@ -83,16 +86,25 @@ def gen_output(disease, data, output_description, is_combined=False):
         post80_upper = data[12][1]
         post80_lower = data[12][2]
 
-        # if is_combined:
-
-        # Add in subnational data
-        # for country in countries:
-        #     subnational_baseline_file = f"{country}_{disease}.nc"
-        #     subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
-        #     subnatl_data = subnatl_wk.data_vars
-        #     post25[:, :] += subnatl_data["post25"].values
-        #     post60[:, :] += subnatl_data["post60"].values
-        #     post80[:, :] += subnatl_data["post80"].values
+        if is_combined:
+            # Add in subnational data
+            for country in countries:
+                subnational_baseline_file = f"{country}_{disease}.nc"
+                try:
+                    subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
+                    subnatl_data = subnatl_wk.data_vars
+                except:
+                    print(f"Error importing {disease} {country} subnational data")
+                    continue
+                post25_mean[:, :] += subnatl_data["post25_mean"].values
+                post25_upper[:, :] += subnatl_data["post25_upper"].values
+                post25_lower[:, :] += subnatl_data["post25_lower"].values
+                post60_mean[:, :] += subnatl_data["post60_mean"].values
+                post60_upper[:, :] += subnatl_data["post60_upper"].values
+                post60_lower[:, :] += subnatl_data["post60_lower"].values
+                post80_mean[:, :] += subnatl_data["post80_mean"].values
+                post80_upper[:, :] += subnatl_data["post80_upper"].values
+                post80_lower[:, :] += subnatl_data["post80_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
@@ -120,16 +132,19 @@ def gen_output(disease, data, output_description, is_combined=False):
         post25_upper = data[0][1]
         post25_lower = data[0][2]
 
-        # if is_combined:
-
-        # Add in subnational data
-        # for country in countries:
-        #     subnational_baseline_file = f"{country}_{disease}.nc"
-        #     subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
-        #     subnatl_data = subnatl_wk.data_vars
-        #     post25[:, :] += subnatl_data["post25"].values
-        #     post60[:, :] += subnatl_data["post60"].values
-        #     post80[:, :] += subnatl_data["post80"].values
+        if is_combined:
+            # Add in subnational data
+            for country in countries:
+                subnational_baseline_file = f"{country}_{disease}.nc"
+                try:
+                    subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
+                    subnatl_data = subnatl_wk.data_vars
+                except:
+                    print(f"Error importing {disease} {country} subnational data")
+                    continue
+                post25_mean[:, :] += subnatl_data["post25_mean"].values
+                post25_upper[:, :] += subnatl_data["post25_upper"].values
+                post25_lower[:, :] += subnatl_data["post25_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
@@ -154,16 +169,22 @@ def gen_output(disease, data, output_description, is_combined=False):
         post75_upper = data[2][1]
         post75_lower = data[2][2]
 
-        # if is_combined:
-
-        # Add in subnational data
-        # for country in countries:
-        #     subnational_baseline_file = f"{country}_{disease}.nc"
-        #     subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
-        #     subnatl_data = subnatl_wk.data_vars
-        #     post25[:, :] += subnatl_data["post25"].values
-        #     post60[:, :] += subnatl_data["post60"].values
-        #     post80[:, :] += subnatl_data["post80"].values
+        if is_combined:
+            # Add in subnational data
+            for country in countries:
+                subnational_baseline_file = f"{country}_{disease}.nc"
+                try:
+                    subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
+                    subnatl_data = subnatl_wk.data_vars
+                except:
+                    print(f"Error importing {disease} {country} subnational data")
+                    continue
+                post65_mean[:, :] += subnatl_data["post65_mean"].values
+                post65_upper[:, :] += subnatl_data["post65_upper"].values
+                post65_lower[:, :] += subnatl_data["post65_lower"].values
+                post75_mean[:, :] += subnatl_data["post75_mean"].values
+                post75_upper[:, :] += subnatl_data["post75_upper"].values
+                post75_lower[:, :] += subnatl_data["post75_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
@@ -195,7 +216,7 @@ def combined_output():
         national_baseline_file = f"{disease}.csv"
         try:
             # location name, age_name, metric_name, year, val, upper, lower
-            data = pd.read_csv(national_baseline_path + national_baseline_file, usecols=[3, 7, 11, 12, 13])
+            data = pd.read_csv(national_baseline_path + national_baseline_file, usecols=[3, 7, 11, 12, 13, 14, 15])
         except:
             print(f"Error importing {disease}")
             continue
@@ -206,7 +227,7 @@ def combined_output():
         wk = wk.sort_values(['location_name', 'age_name'])
 
         age_groups = sorted(list(set(wk['age_name'].values)))
-        data = np.zeros((len(age_groups), len(latitude), len(longitude)))
+        data = np.zeros((len(age_groups), len(data_types), len(latitude), len(longitude)))
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -217,21 +238,25 @@ def combined_output():
 
             for k, age_group in enumerate(age_groups):
 
-                # retrieve mortality corresponding to correct age group and state
-                try:
-                    tmp = wk.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
-                    mort = tmp[(tmp["age_name"] == age_group)]["val"].values[0]
-                except IndexError:
-                    print(age_group, j)
-                    break
+                for p, data_type in enumerate(data_types):
 
-                data[k, :, :] += fractionCountry[j, :, :] * mort
+                    # retrieve mortality corresponding to correct age group and state
+                    try:
+                        tmp = wk.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
+                        mort = tmp[(tmp["age_name"] == age_group)][data_type].values[0]
+                    except IndexError:
+                        print(age_group, j)
+                        break
 
-        national_output_path = "D:/CMIP6_data/Mortality/Output/National_mortality_baseline_2015/"
+                    data[k, p, :, :] += fractionCountry[j, :, :] * mort
+
+        national_output_path = "D:/CMIP6_data/Mortality/Output/Combined_mortality_baseline_2015/"
         output_file = f"{disease}.nc"
-        output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2015, with national-level data and subnational-level data in Brazil, Indonesia, Japan, Kenya, Mexico, UK, and US"
+        output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2015, with " \
+                             f"subnational-level data in Brazil, Indonesia, Japan, Kenya, " \
+                             f"Mexico, UK, and US and national-level data"
 
-        ds = gen_output(disease, data, output_description)
+        ds = gen_output(disease, data, output_description, is_combined=True)
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -280,7 +305,7 @@ def national_output():
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2015, with national-level data only"
 
         ds = gen_output(disease, data, output_description)
-        # ds.to_netcdf(output_path + output_file)
+        ds.to_netcdf(output_path + output_file)
         ds.close()
 
         print(f"DONE: {disease}")
@@ -333,7 +358,8 @@ def subnational_output():
 
                         data[k, p, :, :] += fractionState[j, :, :] * mort
 
-            output_description = f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups in 2015"
+            output_description = f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups " \
+                                 f"in 2015 "
             output_file = f"{country}_{disease}.nc"
 
             ds = gen_output(disease, data, output_description)
@@ -354,7 +380,7 @@ def subnational_output():
 
 
 def main():
-    subnational_output()
+    combined_output()
 
 
 if __name__ == "__main__":
