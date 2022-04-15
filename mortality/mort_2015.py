@@ -72,7 +72,6 @@ def rename_helper(df, to_be_dropped, to_be_renamed):
     return df
 
 
-# noinspection SpellCheckingInspection
 def gen_output(disease, data, output_description, is_combined=False):
     """Generate output Dataset"""
     if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
@@ -203,6 +202,8 @@ def gen_output(disease, data, output_description, is_combined=False):
                 description=output_description,
             )
         )
+    else:
+        raise Exception("Undefined disease")
 
     return ds
 
@@ -245,7 +246,7 @@ def combined_output():
                         tmp = wk.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
                         mort = tmp[(tmp["age_name"] == age_group)][data_type].values[0]
                     except IndexError:
-                        print(age_group, j)
+                        print("Error importing 2015 national baseline files", age_group, j)
                         break
 
                     data[k, p, :, :] += fractionCountry[j, :, :] * mort
