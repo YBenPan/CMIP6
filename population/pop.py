@@ -68,7 +68,7 @@ for ssp in range(len(ssps)):
     country_pop_values_all_ages[:, 0:10, :] = country_pop_ds.data_vars[
         "Population"
     ].values
-    country_pop_values_all_ages[:, 10, :] = np.sum(country_pop_values_all_ages, axis=1)
+    country_pop_values_all_ages[:, 10, :] = np.sum(country_pop_values_all_ages[:, [0, 2], :], axis=1)
 
     # Select age groups
     # Shape: Year, Age Group, Country ID
