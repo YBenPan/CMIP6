@@ -14,17 +14,17 @@ from datetime import datetime
 #### 05x05 COUNTRY FRACTIONS (PUT THE 6 FILES TOGETHER)
 #### USER INPUT:
 #### WHERE IS THE 0.5X0.5 DEGREE FILE WITH COUNTRY FRACTIONS?
-base_path = "F:\\Computer Programming\\Projects\\CMIP6\\data\\population\\"
+base_path = "D:/CMIP6_data/population/national_pop/"
 #### WHAT IS THE NAME OF THE FILE WITH THE COUNTRY FRACTIONS?
 base_file = "countryFractions_2010_0.5x0.5.nc"
 #### WHERE IS THE COUNTRY LEVEL .CSV FILE?
-country_path = "F:\\Computer Programming\\Projects\\CMIP6\\data\\population\\"
+country_path = "D:/CMIP6_data/population/national_pop/"
 #### WHAT'S THE NAME OF THE COUNTRY LEVEL POPULATION FILE WITH AGE GROUPS?
 country_file = ["SSP1.nc", "SSP2.nc", "SSP3.nc"]
 #### WHERE ARE THE FILES WITH GRIDDED POPULATION?
-pop_path = "D:\\CMIP6_data\\Pop\\"
+pop_path = "D:/CMIP6_data/population/gridded_pop/"
 #### Where to save the output
-output_path = "D:\\CMIP6_data\\Pop_Result"
+output_path = "D:/CMIP6_data/population/gridded_pop_age/"
 ####################################################################################################
 
 #### IMPORT COUNTRY FRACTIONS
@@ -52,7 +52,25 @@ longitude = np.arange(0.25, 360, 0.5)
 ####################################################################################################
 
 ssps = ["ssp1", "ssp2", "ssp3"]
-age_groups = [5, 7, 9, 10]
+age_groups = [
+    5,  # 25-29
+    6,  # 30-34
+    7,  # 35-39
+    8,  # 40-44
+    9,  # 45-49
+    11, # 50-54
+    12, # 55-59
+    13, # 60-64
+    14, # 65-69
+    15, # 70-74
+    16, # 75-79
+    17, # 80-84
+    18, # 85-89
+    19, # 90-94
+    20, # 95-99
+    2,  # 100+
+    21  # All
+]
 
 # (2010 - 1950) / 5 = 12
 years = np.arange(12, 12 + 2 * 10, 2)
@@ -64,11 +82,10 @@ for ssp in range(len(ssps)):
     country_pop_ds = xr.open_dataset(data)
     country_pop_ds.close()
 
-    country_pop_values_all_ages = np.zeros((31, 11, 193))
-    country_pop_values_all_ages[:, 0:10, :] = country_pop_ds.data_vars[
+    country_pop_values_all_ages = np.zeros((31, 22, 193))
+    country_pop_values_all_ages = country_pop_ds.data_vars[
         "Population"
     ].values
-    country_pop_values_all_ages[:, 10, :] = np.sum(country_pop_values_all_ages[:, [0, 2], :], axis=1)
 
     # Select age groups
     # Shape: Year, Age Group, Country ID
@@ -76,6 +93,7 @@ for ssp in range(len(ssps)):
 
     # Total Population of a Country:
     country_pop_sum = country_pop_values[:, -1, :]
+    print(*country_pop_sum[:, -1, ], sep="\n")
 
     for year_index in years:
 
@@ -83,7 +101,7 @@ for ssp in range(len(ssps)):
 
         # Import gridded population data
         grid_pop_file_name = f"{ssps[ssp]}_tot_{cur_year}.nc"
-        grid_pop_ds = xr.open_dataset(f"{pop_path}\\{ssps[ssp]}\\{grid_pop_file_name}")
+        grid_pop_ds = xr.open_dataset(f"{pop_path}/{ssps[ssp]}/{grid_pop_file_name}")
         grid_pop_values = grid_pop_ds.data_vars["population"].values
         grid_pop_ds.close()
 
@@ -106,6 +124,8 @@ for ssp in range(len(ssps)):
                     fractionCountry[j, :, :] * grid_pop_values[:, :] * ratio
                 )
 
+        print(f"Year {1950 + 5 * year_index} ", np.sum(pop_array[:, :, 0]) / 10 ** 9, np.sum(pop_array[:, :, 1]) / 10 ** 9, np.sum(pop_array[:, :, 2]) / 10 ** 9, np.sum(pop_array[:, :, 3]) / 10 ** 9)
+        continue
         # Create Dataset
         ds = xr.Dataset(
             data_vars=dict(
@@ -124,8 +144,8 @@ for ssp in range(len(ssps)):
         )
 
         # Output
-        os.makedirs(f"{output_path}\\{ssps[ssp]}", exist_ok=True)
-        ds.to_netcdf(f"{output_path}\\{ssps[ssp]}\\{cur_year}.nc")
+        # os.makedirs(f"{output_path}\\{ssps[ssp]}", exist_ok=True)
+        # ds.to_netcdf(f"{output_path}\\{ssps[ssp]}\\{cur_year}.nc")
         ds.close()
 
         print(f"{datetime.now()} DONE: {ssps[ssp]}, {cur_year}")

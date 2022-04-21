@@ -14,15 +14,15 @@ from pandas.core.indexes import multi
 #### 05x05 COUNTRY FRACTIONS (PUT THE 6 FILES TOGETHER)
 #### USER INPUT:
 #### WHERE IS THE COUNTRY LEVEL .CSV FILE?
-country_path = "F:\\Computer Programming\\Projects\\CMIP6\\data\\population\\"
+country_path = "D:/CMIP6_data/population/national_pop/"
 #### WHAT ARE THE NAMES OF THE COUNTRY LEVEL BASELINE FILE?
 country_files = ["wcde_data_SSP1.csv", "wcde_data_SSP2.csv", "wcde_data_SSP3.csv"]
 #### WHERE IS THE COUNTRY NAME .CSV FILE?
-name_path = "F:\\Computer Programming\\Projects\\CMIP6\\data\\population\\"
+name_path = "D:/CMIP6_data/population/national_pop/"
 #### WHAT'S THE NAME OF THE COUNTRY NAME FILE?
 name_file = "countryvalue_blank.csv"
 #### Where to save the output
-output_path = "F:\\Computer Programming\\Projects\\CMIP6\\data\\population\\"
+output_path = "D:/CMIP6_data/population/national_pop/"
 #### WHAT ARE THE NAMES OF THE OUTPUT FILES?
 output_files = ["SSP1.nc", "SSP2.nc", "SSP3.nc"]
 ####################################################################################################
@@ -60,16 +60,16 @@ for ssp_index in range(len(country_files)):
 
     # Combine Serbia and Montenegro
 
-    Serbia_index = [x for x in df.index.values if df["Area"].iloc[x] == "Serbia"]
-    Montenegro_index = [
-        x for x in df.index.values if df["Area"].iloc[x] == "Montenegro"
-    ]
-    if len(Serbia_index) != len(Montenegro_index):
-        raise Exception(
-            "Number of data points of Serbia is not equal to that of Montenegro!"
-        )
-    for i in range(0, len(Serbia_index)):
-        df.at[Serbia_index[i], "Population"] += df.at[Montenegro_index[i], "Population"]
+    # Serbia_index = [x for x in df.index.values if df["Area"].iloc[x] == "Serbia"]
+    # Montenegro_index = [
+    #     x for x in df.index.values if df["Area"].iloc[x] == "Montenegro"
+    # ]
+    # if len(Serbia_index) != len(Montenegro_index):
+    #     raise Exception(
+    #         "Number of data points of Serbia is not equal to that of Montenegro!"
+    #     )
+    # for i in range(0, len(Serbia_index)):
+    #     df.at[Serbia_index[i], "Population"] += df.at[Montenegro_index[i], "Population"]
 
     # Drop Countries
 
