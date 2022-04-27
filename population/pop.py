@@ -24,7 +24,7 @@ country_file = ["SSP1.nc", "SSP2.nc", "SSP3.nc"]
 #### WHERE ARE THE FILES WITH GRIDDED POPULATION?
 pop_path = "D:/CMIP6_data/population/gridded_pop/"
 #### Where to save the output
-output_path = "D:/CMIP6_data/population/gridded_pop_age/"
+output_path = "D:/CMIP6_data/population/gridded_pop_age_5_years/"
 ####################################################################################################
 
 #### IMPORT COUNTRY FRACTIONS
@@ -93,7 +93,6 @@ for ssp in range(len(ssps)):
 
     # Total Population of a Country:
     country_pop_sum = country_pop_values[:, -1, :]
-    print(*country_pop_sum[:, -1, ], sep="\n")
 
     for year_index in years:
 
@@ -124,28 +123,45 @@ for ssp in range(len(ssps)):
                     fractionCountry[j, :, :] * grid_pop_values[:, :] * ratio
                 )
 
-        print(f"Year {1950 + 5 * year_index} ", np.sum(pop_array[:, :, 0]) / 10 ** 9, np.sum(pop_array[:, :, 1]) / 10 ** 9, np.sum(pop_array[:, :, 2]) / 10 ** 9, np.sum(pop_array[:, :, 3]) / 10 ** 9)
-        continue
+        print(f"SSP {ssp}, Year {1950 + 5 * year_index} ",
+              round(np.sum(pop_array[:, :, 0:16]) / 10 ** 9, 1),
+              round(np.sum(pop_array[:, :, 7:16]) / 10 ** 9, 1),
+              round(np.sum(pop_array[:, :, 11:16]) / 10 ** 9, 1),
+              round(np.sum(pop_array[:, :, -1]) / 10 ** 9, 1),
+        )
+
         # Create Dataset
         ds = xr.Dataset(
             data_vars=dict(
-                post25=(["lat", "lon"], pop_array[:, :, 0]),
-                post60=(["lat", "lon"], pop_array[:, :, 1]),
-                post80=(["lat", "lon"], pop_array[:, :, 2]),
-                all=(["lat", "lon"], pop_array[:, :, 3]),
+                age_25_29=(["lat", "lon"], pop_array[:, :, 0]),
+                age_30_34=(["lat", "lon"], pop_array[:, :, 1]),
+                age_35_39=(["lat", "lon"], pop_array[:, :, 2]),
+                age_40_44=(["lat", "lon"], pop_array[:, :, 3]),
+                age_45_49=(["lat", "lon"], pop_array[:, :, 4]),
+                age_50_54=(["lat", "lon"], pop_array[:, :, 5]),
+                age_55_59=(["lat", "lon"], pop_array[:, :, 6]),
+                age_60_64=(["lat", "lon"], pop_array[:, :, 7]),
+                age_65_69=(["lat", "lon"], pop_array[:, :, 8]),
+                age_70_74=(["lat", "lon"], pop_array[:, :, 9]),
+                age_75_79=(["lat", "lon"], pop_array[:, :, 10]),
+                age_80_84=(["lat", "lon"], pop_array[:, :, 11]),
+                age_85_89=(["lat", "lon"], pop_array[:, :, 12]),
+                age_90_94=(["lat", "lon"], pop_array[:, :, 13]),
+                post95=(["lat", "lon"], pop_array[:, :, 14] + pop_array[:, :, 15]),
+                all=(["lat", "lon"], pop_array[:, :, 16]),
             ),
             coords=dict(
                 lat=latitude,
                 lon=longitude,
             ),
             attrs=dict(
-                description="Population of 25+, 60+, and 80+ converted to a 0.5x0.5 degree grid",
+                description="Population by age groups converted to a 0.5x0.5 degree grid",
             ),
         )
 
         # Output
-        # os.makedirs(f"{output_path}\\{ssps[ssp]}", exist_ok=True)
-        # ds.to_netcdf(f"{output_path}\\{ssps[ssp]}\\{cur_year}.nc")
+        os.makedirs(f"{output_path}\\{ssps[ssp]}", exist_ok=True)
+        ds.to_netcdf(f"{output_path}\\{ssps[ssp]}\\{cur_year}.nc")
         ds.close()
 
         print(f"{datetime.now()} DONE: {ssps[ssp]}, {cur_year}")
