@@ -10,7 +10,7 @@ from netCDF4 import Dataset
 fraction_path = "D:/CMIP6_data/fraction/"
 base_path = "D:/CMIP6_data/Mortality/Subnational Data_historical/"
 
-diseases = ["COPD", "Dementia", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
+diseases = ["Allcause", "COPD", "Dementia", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
             "NonCommunicableDiseases", "Stroke", "Diabetes"]
 data_types = ["val", "upper", "lower"]
 
@@ -27,7 +27,7 @@ f1.close()
 fractionCountry[fractionCountry < 0.0] = 0.0
 fractionCountry[fractionCountry > 1.0] = 0.0
 
-national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_with_post60/"
+national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_5_years/"
 subnational_baseline_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2015/"
 
 countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "uk", "us"]
@@ -74,82 +74,120 @@ def rename_helper(df):
 
 def gen_output(disease, data, output_description, subnatl_path, is_combined=False):
     """Generate output Dataset"""
-    if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
-        post25_mean = data[0][0]
-        post25_upper = data[0][1]
-        post25_lower = data[0][2]
-        post60_mean = data[1][0]
-        post60_upper = data[1][1]
-        post60_lower = data[1][2]
-        post80_mean = data[2][0]
-        post80_upper = data[2][1]
-        post80_lower = data[2][2]
+    if disease in ["Allcause", "COPD", "Diabetes", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer", "NonCommunicableDiseases", "Stroke"]:
+        age_25_29_mean = data[0][0]
+        age_25_29_upper = data[0][1]
+        age_25_29_lower = data[0][2]
+        age_30_34_mean = data[1][0]
+        age_30_34_upper = data[1][1]
+        age_30_34_lower = data[1][2]
+        age_35_39_mean = data[2][0]
+        age_35_39_upper = data[2][1]
+        age_35_39_lower = data[2][2]
+        age_40_44_mean = data[3][0]
+        age_40_44_upper = data[3][1]
+        age_40_44_lower = data[3][2]
+        age_45_49_mean = data[4][0]
+        age_45_49_upper = data[4][1]
+        age_45_49_lower = data[4][2]
+        age_50_54_mean = data[5][0]
+        age_50_54_upper = data[5][1]
+        age_50_54_lower = data[5][2]
+        age_55_59_mean = data[6][0]
+        age_55_59_upper = data[6][1]
+        age_55_59_lower = data[6][2]
+        age_60_64_mean = data[7][0]
+        age_60_64_upper = data[7][1]
+        age_60_64_lower = data[7][2]
+        age_65_69_mean = data[8][0]
+        age_65_69_upper = data[8][1]
+        age_65_69_lower = data[8][2]
+        age_70_74_mean = data[9][0]
+        age_70_74_upper = data[9][1]
+        age_70_74_lower = data[9][2]
+        age_75_79_mean = data[10][0]
+        age_75_79_upper = data[10][1]
+        age_75_79_lower = data[10][2]
+        age_80_84_mean = data[11][0]
+        age_80_84_upper = data[11][1]
+        age_80_84_lower = data[11][2]
+        age_85_89_mean = data[12][0]
+        age_85_89_upper = data[12][1]
+        age_85_89_lower = data[12][2]
+        age_90_94_mean = data[13][0]
+        age_90_94_upper = data[13][1]
+        age_90_94_lower = data[13][2]
+        post95_mean = data[14][0]
+        post95_upper = data[14][1]
+        post95_lower = data[14][2]
 
-        if is_combined:
-            # Add in subnational data
-            for country in countries:
-                subnatl_file = f"{country}_{disease}.nc"
-                try:
-                    subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
-                    subnatl_data = subnatl_wk.data_vars
-                except:
-                    print(f"Error importing {disease} {country} subnational data")
-                    continue
-                post25_mean[:, :] += subnatl_data["post25_mean"].values
-                post25_upper[:, :] += subnatl_data["post25_upper"].values
-                post25_lower[:, :] += subnatl_data["post25_lower"].values
-                post60_mean[:, :] += subnatl_data["post60_mean"].values
-                post60_upper[:, :] += subnatl_data["post60_upper"].values
-                post60_lower[:, :] += subnatl_data["post60_lower"].values
-                post80_mean[:, :] += subnatl_data["post80_mean"].values
-                post80_upper[:, :] += subnatl_data["post80_upper"].values
-                post80_lower[:, :] += subnatl_data["post80_lower"].values
-
-        ds = xr.Dataset(
-            data_vars=dict(
-                post25_mean=(["lat", "lon"], post25_mean),
-                post25_upper=(["lat", "lon"], post25_upper),
-                post25_lower=(["lat", "lon"], post25_lower),
-                post60_mean=(["lat", "lon"], post60_mean),
-                post60_upper=(["lat", "lon"], post60_upper),
-                post60_lower=(["lat", "lon"], post60_lower),
-                post80_mean=(["lat", "lon"], post80_mean),
-                post80_upper=(["lat", "lon"], post80_upper),
-                post80_lower=(["lat", "lon"], post80_lower),
-            ),
-            coords=dict(
-                lat=(["lat"], latitude),
-                lon=(["lon"], longitude),
-            ),
-            attrs=dict(
-                description=output_description,
-            ),
-        )
-
-    elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer", "Diabetes"]:
-        post25_mean = data[0][0]
-        post25_upper = data[0][1]
-        post25_lower = data[0][2]
-
-        if is_combined:
-            # Add in subnational data
-            for country in countries:
-                subnatl_file = f"{country}_{disease}.nc"
-                try:
-                    subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
-                    subnatl_data = subnatl_wk.data_vars
-                except:
-                    print(f"Error importing {disease} {country} subnational data")
-                    continue
-                post25_mean[:, :] += subnatl_data["post25_mean"].values
-                post25_upper[:, :] += subnatl_data["post25_upper"].values
-                post25_lower[:, :] += subnatl_data["post25_lower"].values
+        # if is_combined:
+        #     # Add in subnational data
+        #     for country in countries:
+        #         subnatl_file = f"{country}_{disease}.nc"
+        #         try:
+        #             subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
+        #             subnatl_data = subnatl_wk.data_vars
+        #         except:
+        #             print(f"Error importing {disease} {country} subnational data")
+        #             continue
+        #         post25_mean[:, :] += subnatl_data["post25_mean"].values
+        #         post25_upper[:, :] += subnatl_data["post25_upper"].values
+        #         post25_lower[:, :] += subnatl_data["post25_lower"].values
+        #         post60_mean[:, :] += subnatl_data["post60_mean"].values
+        #         post60_upper[:, :] += subnatl_data["post60_upper"].values
+        #         post60_lower[:, :] += subnatl_data["post60_lower"].values
+        #         post80_mean[:, :] += subnatl_data["post80_mean"].values
+        #         post80_upper[:, :] += subnatl_data["post80_upper"].values
+        #         post80_lower[:, :] += subnatl_data["post80_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
-                post25_mean=(["lat", "lon"], post25_mean),
-                post25_upper=(["lat", "lon"], post25_upper),
-                post25_lower=(["lat", "lon"], post25_lower),
+                age_25_29_mean=(["lat", "lon"], age_25_29_mean),
+                age_25_29_upper=(["lat", "lon"], age_25_29_upper),
+                age_25_29_lower=(["lat", "lon"], age_25_29_lower),
+                age_30_34_mean=(["lat", "lon"], age_30_34_mean),
+                age_30_34_upper=(["lat", "lon"], age_30_34_upper),
+                age_30_34_lower=(["lat", "lon"], age_30_34_lower),
+                age_35_39_mean=(["lat", "lon"], age_35_39_mean),
+                age_35_39_upper=(["lat", "lon"], age_35_39_upper),
+                age_35_39_lower=(["lat", "lon"], age_35_39_lower),
+                age_40_44_mean=(["lat", "lon"], age_40_44_mean),
+                age_40_44_upper=(["lat", "lon"], age_40_44_upper),
+                age_40_44_lower=(["lat", "lon"], age_40_44_lower),
+                age_45_49_mean=(["lat", "lon"], age_45_49_mean),
+                age_45_49_upper=(["lat", "lon"], age_45_49_upper),
+                age_45_49_lower=(["lat", "lon"], age_45_49_lower),
+                age_50_54_mean=(["lat", "lon"], age_50_54_mean),
+                age_50_54_upper=(["lat", "lon"], age_50_54_upper),
+                age_50_54_lower=(["lat", "lon"], age_50_54_lower),
+                age_55_59_mean=(["lat", "lon"], age_55_59_mean),
+                age_55_59_upper=(["lat", "lon"], age_55_59_upper),
+                age_55_59_lower=(["lat", "lon"], age_55_59_lower),
+                age_60_64_mean=(["lat", "lon"], age_60_64_mean),
+                age_60_64_upper=(["lat", "lon"], age_60_64_upper),
+                age_60_64_lower=(["lat", "lon"], age_60_64_lower),
+                age_65_69_mean=(["lat", "lon"], age_65_69_mean),
+                age_65_69_upper=(["lat", "lon"], age_65_69_upper),
+                age_65_69_lower=(["lat", "lon"], age_65_69_lower),
+                age_70_74_mean=(["lat", "lon"], age_70_74_mean),
+                age_70_74_upper=(["lat", "lon"], age_70_74_upper),
+                age_70_74_lower=(["lat", "lon"], age_70_74_lower),
+                age_75_79_mean=(["lat", "lon"], age_75_79_mean),
+                age_75_79_upper=(["lat", "lon"], age_75_79_upper),
+                age_75_79_lower=(["lat", "lon"], age_75_79_lower),
+                age_80_84_mean=(["lat", "lon"], age_80_84_mean),
+                age_80_84_upper=(["lat", "lon"], age_80_84_upper),
+                age_80_84_lower=(["lat", "lon"], age_80_84_lower),
+                age_85_89_mean=(["lat", "lon"], age_85_89_mean),
+                age_85_89_upper=(["lat", "lon"], age_85_89_upper),
+                age_85_89_lower=(["lat", "lon"], age_85_89_lower),
+                age_90_94_mean=(["lat", "lon"], age_90_94_mean),
+                age_90_94_upper=(["lat", "lon"], age_90_94_upper),
+                age_90_94_lower=(["lat", "lon"], age_90_94_lower),
+                post95_mean=(["lat", "lon"], post95_mean),
+                post95_upper=(["lat", "lon"], post95_upper),
+                post95_lower=(["lat", "lon"], post95_lower),
             ),
             coords=dict(
                 lat=(["lat"], latitude),
@@ -161,38 +199,98 @@ def gen_output(disease, data, output_description, subnatl_path, is_combined=Fals
         )
 
     elif disease == "Dementia":
-        post65_mean = data[0][0]
-        post65_upper = data[0][1]
-        post65_lower = data[0][2]
-        post75_mean = data[1][0]
-        post75_upper = data[1][1]
-        post75_lower = data[1][2]
+        age_40_44_mean = data[3][0]
+        age_40_44_upper = data[3][1]
+        age_40_44_lower = data[3][2]
+        age_45_49_mean = data[4][0]
+        age_45_49_upper = data[4][1]
+        age_45_49_lower = data[4][2]
+        age_50_54_mean = data[5][0]
+        age_50_54_upper = data[5][1]
+        age_50_54_lower = data[5][2]
+        age_55_59_mean = data[6][0]
+        age_55_59_upper = data[6][1]
+        age_55_59_lower = data[6][2]
+        age_60_64_mean = data[7][0]
+        age_60_64_upper = data[7][1]
+        age_60_64_lower = data[7][2]
+        age_65_69_mean = data[8][0]
+        age_65_69_upper = data[8][1]
+        age_65_69_lower = data[8][2]
+        age_70_74_mean = data[9][0]
+        age_70_74_upper = data[9][1]
+        age_70_74_lower = data[9][2]
+        age_75_79_mean = data[10][0]
+        age_75_79_upper = data[10][1]
+        age_75_79_lower = data[10][2]
+        age_80_84_mean = data[11][0]
+        age_80_84_upper = data[11][1]
+        age_80_84_lower = data[11][2]
+        age_85_89_mean = data[12][0]
+        age_85_89_upper = data[12][1]
+        age_85_89_lower = data[12][2]
+        age_90_94_mean = data[13][0]
+        age_90_94_upper = data[13][1]
+        age_90_94_lower = data[13][2]
+        post95_mean = data[14][0]
+        post95_upper = data[14][1]
+        post95_lower = data[14][2]
 
-        if is_combined:
-            # Add in subnational data
-            for country in countries:
-                subnatl_file = f"{country}_{disease}.nc"
-                try:
-                    subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
-                    subnatl_data = subnatl_wk.data_vars
-                except:
-                    print(f"Error importing {disease} {country} subnational data")
-                    continue
-                post65_mean[:, :] += subnatl_data["post65_mean"].values
-                post65_upper[:, :] += subnatl_data["post65_upper"].values
-                post65_lower[:, :] += subnatl_data["post65_lower"].values
-                post75_mean[:, :] += subnatl_data["post75_mean"].values
-                post75_upper[:, :] += subnatl_data["post75_upper"].values
-                post75_lower[:, :] += subnatl_data["post75_lower"].values
+        # if is_combined:
+        #     # Add in subnational data
+        #     for country in countries:
+        #         subnatl_file = f"{country}_{disease}.nc"
+        #         try:
+        #             subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
+        #             subnatl_data = subnatl_wk.data_vars
+        #         except:
+        #             print(f"Error importing {disease} {country} subnational data")
+        #             continue
+        #         post65_mean[:, :] += subnatl_data["post65_mean"].values
+        #         post65_upper[:, :] += subnatl_data["post65_upper"].values
+        #         post65_lower[:, :] += subnatl_data["post65_lower"].values
+        #         post75_mean[:, :] += subnatl_data["post75_mean"].values
+        #         post75_upper[:, :] += subnatl_data["post75_upper"].values
+        #         post75_lower[:, :] += subnatl_data["post75_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
-                post65_mean=(["lat", "lon"], post65_mean),
-                post65_upper=(["lat", "lon"], post65_upper),
-                post65_lower=(["lat", "lon"], post65_lower),
-                post75_mean=(["lat", "lon"], post75_mean),
-                post75_upper=(["lat", "lon"], post75_upper),
-                post75_lower=(["lat", "lon"], post75_lower),
+                age_40_44_mean=(["lat", "lon"], age_40_44_mean),
+                age_40_44_upper=(["lat", "lon"], age_40_44_upper),
+                age_40_44_lower=(["lat", "lon"], age_40_44_lower),
+                age_45_49_mean=(["lat", "lon"], age_45_49_mean),
+                age_45_49_upper=(["lat", "lon"], age_45_49_upper),
+                age_45_49_lower=(["lat", "lon"], age_45_49_lower),
+                age_50_54_mean=(["lat", "lon"], age_50_54_mean),
+                age_50_54_upper=(["lat", "lon"], age_50_54_upper),
+                age_50_54_lower=(["lat", "lon"], age_50_54_lower),
+                age_55_59_mean=(["lat", "lon"], age_55_59_mean),
+                age_55_59_upper=(["lat", "lon"], age_55_59_upper),
+                age_55_59_lower=(["lat", "lon"], age_55_59_lower),
+                age_60_64_mean=(["lat", "lon"], age_60_64_mean),
+                age_60_64_upper=(["lat", "lon"], age_60_64_upper),
+                age_60_64_lower=(["lat", "lon"], age_60_64_lower),
+                age_65_69_mean=(["lat", "lon"], age_65_69_mean),
+                age_65_69_upper=(["lat", "lon"], age_65_69_upper),
+                age_65_69_lower=(["lat", "lon"], age_65_69_lower),
+                age_70_74_mean=(["lat", "lon"], age_70_74_mean),
+                age_70_74_upper=(["lat", "lon"], age_70_74_upper),
+                age_70_74_lower=(["lat", "lon"], age_70_74_lower),
+                age_75_79_mean=(["lat", "lon"], age_75_79_mean),
+                age_75_79_upper=(["lat", "lon"], age_75_79_upper),
+                age_75_79_lower=(["lat", "lon"], age_75_79_lower),
+                age_80_84_mean=(["lat", "lon"], age_80_84_mean),
+                age_80_84_upper=(["lat", "lon"], age_80_84_upper),
+                age_80_84_lower=(["lat", "lon"], age_80_84_lower),
+                age_85_89_mean=(["lat", "lon"], age_85_89_mean),
+                age_85_89_upper=(["lat", "lon"], age_85_89_upper),
+                age_85_89_lower=(["lat", "lon"], age_85_89_lower),
+                age_90_94_mean=(["lat", "lon"], age_90_94_mean),
+                age_90_94_upper=(["lat", "lon"], age_90_94_upper),
+                age_90_94_lower=(["lat", "lon"], age_90_94_lower),
+                post95_mean=(["lat", "lon"], post95_mean),
+                post95_upper=(["lat", "lon"], post95_upper),
+                post95_lower=(["lat", "lon"], post95_lower),
             ),
             coords=dict(
                 lat=(["lat"], latitude),
@@ -203,7 +301,7 @@ def gen_output(disease, data, output_description, subnatl_path, is_combined=Fals
             )
         )
     else:
-        raise Exception("Undefined disease")
+        raise Exception(f"{disease} is an undefined disease")
 
     return ds
 
@@ -282,7 +380,7 @@ def national_output():
         wk = wk.sort_values(['location_name', 'age_name'])
 
         age_groups = sorted(list(set(wk['age_name'].values)))
-        data = np.zeros((len(age_groups), len(data_types), len(latitude), len(longitude)))
+        data = np.zeros((15, len(data_types), len(latitude), len(longitude)))
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -301,7 +399,10 @@ def national_output():
                         print(age_group, j)
                         break
 
-                    data[k, p, :, :] += fractionCountry[j, :, :] * mort
+                    if disease != "Dementia":
+                        data[k, p, :, :] += fractionCountry[j, :, :] * mort
+                    else:
+                        data[k + 3, p, :, :] += fractionCountry[j, :, :] * mort
 
         output_file = f"{disease}.nc"
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2015, with national-level data only"

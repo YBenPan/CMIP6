@@ -11,8 +11,8 @@ from mort_2015 import rename_helper, gen_output
 
 fraction_path = "D:/CMIP6_data/fraction/"
 
-diseases = ["copd", "dementia", "ihd", "lri", "lc", "ncd", "stroke"]
-disease_names = ["COPD", "Dementia", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
+diseases = ["copd", "dementia", "diabetes", "ihd", "lri", "lc", "ncd", "stroke"]
+disease_names = ["COPD", "Dementia", "Diabetes", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
                  "NonCommunicableDiseases", "Stroke"]
 data_types_2015 = ["val", "upper", "lower"]
 data_types_2040 = [["Deaths.2016.Number", "Deaths.2040.Number"], ["Deaths.2016.Upper", "Deaths.2040.Upper"], ["Deaths.2016.Lower", "Deaths.2040.Lower"], ]
@@ -30,7 +30,7 @@ f1.close()
 fractionCountry[fractionCountry < 0.0] = 0.0
 fractionCountry[fractionCountry > 1.0] = 0.0
 
-national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_with_post60/"
+national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_5_years/"
 national_projection_path = "D:/CMIP6_data/Mortality/Mortality Projections_2040/"
 subnational_baseline_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
 
@@ -355,7 +355,7 @@ def national_output():
             continue
         natl_2040 = natl_2040.fillna(0)
 
-        data = np.zeros((len(age_groups), len(data_types_2040), len(latitude), len(longitude)))
+        data = np.zeros((15, len(data_types_2040), len(latitude), len(longitude)))
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -383,7 +383,10 @@ def national_output():
                         print(age_group, j)
                         break
 
-                    data[k, p, :, :] += fractionCountry[j, :, :] * mort * ratio
+                    if disease_name != "Dementia":
+                        data[k, p, :, :] += fractionCountry[j, :, :] * mort * ratio
+                    else:
+                        data[k + 3, p, :, :] += fractionCountry[j, :, :] * mort * ratio
 
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by age groups (25+, 60+, 80+) with national-level data only in 2040"
         output_path = "D:/CMIP6_data/Mortality/Output/National_mortality_baseline_2040/"
