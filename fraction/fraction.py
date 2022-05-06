@@ -8,7 +8,7 @@ import math
 #### CREATES COMBINED FRACTION FILE FROM SUBNATIONAL AND NATIONAL FRACTION FILES
 ####################################################################################################
 
-countries = ["brazil", "ethiopia", "indonesia", "japan", "kenya", "mexico", "us", "uk", "south_africa"]
+countries = ["brazil", "ethiopia", "indonesia", "iran", "japan", "kenya", "mexico", "us", "uk", "south_africa"]
 area_path = "D:/CMIP6_data/fraction/"
 output_path = "D:/CMIP6_data/fraction/"
 
@@ -19,16 +19,19 @@ def subnational_output():
 
     #### COUNTRY-SPECIFIC INPUT ####
     header_name = "NAME_1"
-    country = "ethiopia"
-    country_long_name = "Ethiopia"
+    country = "iran"
+    country_long_name = "Iran"
     # left lon, top lat, state names, shape area
     cols = [0, 1, 2, 3]
     to_be_renamed = {
-        "Addis Abeba": "Addis Ababa",
-        "Benshangul-Gumaz": "Benishangul-Gumuz",
-        "Gambela Peoples": "Gambella",
-        "Harari People": "Harari",
-        "Southern Nations, Nationalities and Peoples": "Southern Nations, Nationalities, and Peoples"
+        "Chahar Mahall and Bakhtiari": "Chahar Mahaal and Bakhtiari",
+        "East Azarbaijan": "East Azarbayejan",
+        "Esfahan": "Isfahan",
+        "Kohgiluyeh and Buyer Ahmad": "Kohgiluyeh and Boyer-Ahmad",
+        "Kordestan": "Kurdistan",
+        "Razavi Khorasan": "Khorasan-e-Razavi",
+        "Sistan and Baluchestan": "Sistan and Baluchistan",
+        "West Azarbaijan": "West Azarbayejan"
     }
     #################################
 
