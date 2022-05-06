@@ -8,7 +8,7 @@ import math
 #### CREATES COMBINED FRACTION FILE FROM SUBNATIONAL AND NATIONAL FRACTION FILES
 ####################################################################################################
 
-countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "us", "uk"]
+countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "us", "uk", "south_africa"]
 area_path = "D:/CMIP6_data/fraction/"
 output_path = "D:/CMIP6_data/fraction/"
 
@@ -18,20 +18,13 @@ def subnational_output():
     """
 
     #### COUNTRY-SPECIFIC INPUT ####
-    header_name = "ADM1_EN"
-    country = "kenya"
-    country_long_name = "Kenya"
+    header_name = "NAME_1"
+    country = "south_africa"
+    country_long_name = "South Africa"
     # left lon, top lat, state names, shape area
     cols = [0, 1, 2, 3]
     to_be_renamed = {
-        "Homa Bay": "HomaBay",
-        "Taita Taveta": "TaitaTaveta",
-        "Tana River": "TanaRiver",
-        "Tharaka Nithi": "TharakaNithi",
-        "Trans Nzoia": "TransNzoia",
-        "Uasin Gishu": "UasinGishu",
-        "West Pokot": "WestPokot",
-        "Tharaka-Nithi": "TharakaNithi",
+        "North West": "North-West"
     }
     #################################
 
@@ -50,7 +43,7 @@ def subnational_output():
     data = pd.read_csv(area_path + area_file, usecols=cols)
     states = data[header_name].values
     states = sorted(list(set(states)))  # remove duplicates
-    # print(states)
+    print("States that need a name change:", find_diff(states))
 
     # Initialize
     fraction = np.zeros((len(states), 360, 720))
@@ -98,4 +91,17 @@ def subnational_output():
     ds.close()
 
 
-subnational_output()
+def find_diff(states):
+    subnatl_mort_path = "D:/CMIP6_data/Mortality/Subnational Data_historical_5_years/Allcause.csv"
+    wk = pd.read_csv(subnatl_mort_path)
+    mort_states = list(sorted(set(wk["location_name"])))
+    result = filter(lambda state: state not in mort_states, states)
+    return list(result)
+
+
+def main():
+    subnational_output()
+
+
+if __name__ == "__main__":
+    main()
