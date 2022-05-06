@@ -8,7 +8,7 @@ import math
 #### CREATES COMBINED FRACTION FILE FROM SUBNATIONAL AND NATIONAL FRACTION FILES
 ####################################################################################################
 
-countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "us", "uk", "south_africa"]
+countries = ["brazil", "ethiopia", "indonesia", "japan", "kenya", "mexico", "us", "uk", "south_africa"]
 area_path = "D:/CMIP6_data/fraction/"
 output_path = "D:/CMIP6_data/fraction/"
 
@@ -19,12 +19,16 @@ def subnational_output():
 
     #### COUNTRY-SPECIFIC INPUT ####
     header_name = "NAME_1"
-    country = "south_africa"
-    country_long_name = "South Africa"
+    country = "ethiopia"
+    country_long_name = "Ethiopia"
     # left lon, top lat, state names, shape area
     cols = [0, 1, 2, 3]
     to_be_renamed = {
-        "North West": "North-West"
+        "Addis Abeba": "Addis Ababa",
+        "Benshangul-Gumaz": "Benishangul-Gumuz",
+        "Gambela Peoples": "Gambella",
+        "Harari People": "Harari",
+        "Southern Nations, Nationalities and Peoples": "Southern Nations, Nationalities, and Peoples"
     }
     #################################
 
@@ -44,6 +48,7 @@ def subnational_output():
     states = data[header_name].values
     states = sorted(list(set(states)))  # remove duplicates
     print("States that need a name change:", find_diff(states))
+    input()
 
     # Initialize
     fraction = np.zeros((len(states), 360, 720))
