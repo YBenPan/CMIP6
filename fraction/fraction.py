@@ -8,7 +8,7 @@ import math
 #### CREATES COMBINED FRACTION FILE FROM SUBNATIONAL AND NATIONAL FRACTION FILES
 ####################################################################################################
 
-countries = ["brazil", "ethiopia", "indonesia", "iran", "japan", "kenya", "mexico", "us", "uk", "south_africa"]
+countries = ["brazil", "ethiopia", "indonesia", "iran", "japan", "kenya", "mexico", "pakistan", "us", "uk", "south_africa"]
 area_path = "D:/CMIP6_data/fraction/"
 output_path = "D:/CMIP6_data/fraction/"
 
@@ -19,19 +19,14 @@ def subnational_output():
 
     #### COUNTRY-SPECIFIC INPUT ####
     header_name = "NAME_1"
-    country = "iran"
-    country_long_name = "Iran"
+    country = "pakistan"
+    country_long_name = "Pakistan"
     # left lon, top lat, state names, shape area
     cols = [0, 1, 2, 3]
     to_be_renamed = {
-        "Chahar Mahall and Bakhtiari": "Chahar Mahaal and Bakhtiari",
-        "East Azarbaijan": "East Azarbayejan",
-        "Esfahan": "Isfahan",
-        "Kohgiluyeh and Buyer Ahmad": "Kohgiluyeh and Boyer-Ahmad",
-        "Kordestan": "Kurdistan",
-        "Razavi Khorasan": "Khorasan-e-Razavi",
-        "Sistan and Baluchestan": "Sistan and Baluchistan",
-        "West Azarbaijan": "West Azarbayejan"
+        "Azad Kashmir": "Azad Jammu & Kashmir",
+        "Islamabad": "Islamabad Capital Territory",
+        "Khyber-Pakhtunkhwa": "Khyber Pakhtunkhwa",
     }
     #################################
 
@@ -82,6 +77,13 @@ def subnational_output():
     output_states = [x.replace(u'\xa0', '') for x in states]
     output_states = [to_be_renamed[x] if x in to_be_renamed else x for x in output_states]
     print(output_states)
+
+    # Combine Federally Administered Tribal Areas and Khyber Pakhtunkhwa
+    fed_ind = output_states.index("Federally Administered Tribal Areas")
+    khy_ind = output_states.index("Khyber Pakhtunkhwa")
+    fraction[khy_ind] += fraction[fed_ind]
+    output_states = np.delete(output_states, [fed_ind])
+    fraction = np.delete(fraction, [fed_ind], axis=0)
 
     # Output as netCDF
     ds = xr.Dataset(
