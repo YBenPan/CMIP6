@@ -11,8 +11,8 @@ from mort_2015 import rename_helper, gen_output
 
 fraction_path = "D:/CMIP6_data/fraction/"
 
-diseases = ["copd", "dementia", "diabetes", "ihd", "lri", "lc", "ncd", "stroke"]
-disease_names = ["COPD", "Dementia", "Diabetes", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
+diseases = ["allcause", "copd", "dementia", "diabetes", "ihd", "lri", "lc", "ncd", "stroke"]
+disease_names = ["Allcause", "COPD", "Dementia", "Diabetes", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
                  "NonCommunicableDiseases", "Stroke"]
 data_types_2015 = ["val", "upper", "lower"]
 data_types_2040 = [["Deaths.2016.Number", "Deaths.2040.Number"], ["Deaths.2016.Upper", "Deaths.2040.Upper"], ["Deaths.2016.Lower", "Deaths.2040.Lower"], ]
@@ -32,12 +32,12 @@ fractionCountry[fractionCountry > 1.0] = 0.0
 
 national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_5_years/"
 national_projection_path = "D:/CMIP6_data/Mortality/Mortality Projections_2040/"
-subnational_baseline_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
+subnational_nc_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
 
 # Countries with subnational data
-countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "uk", "us"]
-country_ids = [23, 78, 85, 88, 109, 181, 183]
-country_long_names = ["Brazil", "Indonesia", "Japan", "Kenya", "Mexico", "the United Kingdom", "the United States"]
+countries = ["brazil", "ethiopia", "indonesia", "iran", "japan", "kenya", "mexico", "pakistan", "south_africa", "uk", "us"]
+country_long_names = ["Brazil", "Ethiopia", "Indonesia", "Iran", "Japan", "Kenya", "Mexico", "Pakistan", "South Africa", "the United Kingdom", "the United States"]
+country_ids = [23, 58, 78, 79, 85, 88, 109, 127, 158, 181, 183]
 
 
 # def gen_output(disease, data, output_description, is_combined=False):
@@ -206,7 +206,7 @@ def combined_output():
             continue
         natl_2040 = natl_2040.fillna(0)
 
-        data = np.zeros((len(age_groups), len(data_types_2040), len(latitude), len(longitude)))
+        data = np.zeros((15, len(data_types_2040), len(latitude), len(longitude)))
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -237,13 +237,16 @@ def combined_output():
                         print("Error importing 2015 national baseline files", age_group, j)
                         break
 
-                    data[k, p, :, :] += fractionCountry[j, :, :] * mort * ratio
+                    if disease_name != "Dementia":
+                        data[k, p, :, :] += fractionCountry[j, :, :] * mort * ratio
+                    else:
+                        data[k + 3, p, :, :] += fractionCountry[j, :, :] * mort * ratio
 
         output_file = f"{disease_name}.nc"
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2040, with " \
-                             f"subnational-level data in Brazil, Indonesia, Japan, Kenya, " \
-                             f"Mexico, UK, and US and national-level data"
-        ds = gen_output(disease_name, data, output_description, is_combined=True)
+                             f"subnational-level data in Brazil, Ethiopia, Indonesia, Iran, Japan, Kenya, " \
+                             f"Mexico, Pakistan, South Africa, UK, and US and national-level data"
+        ds = gen_output(disease_name, data, output_description, subnational_nc_path, is_combined=True)
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -279,8 +282,8 @@ def subnational_output():
             natl_2040 = natl_2040.fillna(0)
 
             # import mortality baseline
-            subnatl_baseline_path = "D:/CMIP6_data/Mortality/Subnational Data_historical/"
-            subnatl_baseline_file = f"{disease_name}_Subnatl.csv"
+            subnatl_baseline_path = "D:/CMIP6_data/Mortality/Subnational Data_historical_5_years/"
+            subnatl_baseline_file = f"{disease_name}.csv"
             # location name, age_name, metric_name, year, val
             subnatl_2015 = pd.read_csv(subnatl_baseline_path + subnatl_baseline_file, usecols=[3, 7, 11, 12, 13, 14, 15])
             subnatl_2015 = subnatl_2015[(subnatl_2015["location_name"].isin(states)) & (subnatl_2015["year"] == 2015) & (subnatl_2015["metric_name"] == "Rate")]
@@ -288,9 +291,12 @@ def subnational_output():
             subnatl_2015 = subnatl_2015.sort_values(['location_name', 'age_name'])
 
             age_groups = sorted(list(set(subnatl_2015['age_name'].values)))
-            data = np.zeros((len(age_groups), len(data_types_2040), len(latitude), len(longitude)))
+            data = np.zeros((15, len(data_types_2040), len(latitude), len(longitude)))
 
             for j, state in enumerate(states):
+
+                if country_long_name == "Pakistan" and (state == "Azad Jammu & Kashmir" or state == "Gilgit-Baltistan"):
+                    continue
 
                 for k, age_group in enumerate(age_groups):
 
@@ -314,12 +320,15 @@ def subnational_output():
                             print(age_group, state)
                             break
 
-                        data[k, p, :, :] += fractionState[j, :, :] * mort * ratio
+                        if disease_name != "Dementia":
+                            data[k, p, :, :] += fractionState[j, :, :] * mort * ratio
+                        else:
+                            data[k + 3, p, :, :] += fractionState[j, :, :] * mort * ratio
 
             output_file = f"{country}_{disease_name}.nc"
             output_description = f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups" \
                                  f" in 2040 "
-            ds = gen_output(disease_name, data, output_description)
+            ds = gen_output(disease_name, data, output_description, subnatl_baseline_path)
             ds.to_netcdf(output_path + output_file)
             ds.close()
 
@@ -345,7 +354,6 @@ def national_output():
         natl_2015 = natl_2015.drop(columns=["metric_name", "year"])
         natl_2015 = natl_2015.sort_values(['location_name', 'age_name'])
         age_groups = sorted(list(set(natl_2015['age_name'].values)))
-        print(disease_name, age_groups)
 
         # Import national baseline projection from 2040
         national_projection_file = f"{disease}_rate.csv"
@@ -391,7 +399,7 @@ def national_output():
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by age groups (25+, 60+, 80+) with national-level data only in 2040"
         output_path = "D:/CMIP6_data/Mortality/Output/National_mortality_baseline_2040/"
         output_file = f"{disease_name}.nc"
-        ds = gen_output(disease_name, data, output_description, subnational_baseline_path)
+        ds = gen_output(disease_name, data, output_description, subnational_nc_path)
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -399,9 +407,9 @@ def national_output():
 
 
 def main():
-    # subnational_output()
-    # combined_output()
-    national_output()
+    subnational_output()
+    combined_output()
+    # national_output()
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from netCDF4 import Dataset
 ####################################################################################################
 
 fraction_path = "D:/CMIP6_data/fraction/"
-base_path = "D:/CMIP6_data/Mortality/Subnational Data_historical/"
+base_path = "D:/CMIP6_data/Mortality/Subnational Data_historical_5_years/"
 
 diseases = ["Allcause", "COPD", "Dementia", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
             "NonCommunicableDiseases", "Stroke", "Diabetes"]
@@ -28,11 +28,11 @@ fractionCountry[fractionCountry < 0.0] = 0.0
 fractionCountry[fractionCountry > 1.0] = 0.0
 
 national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_5_years/"
-subnational_baseline_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2015/"
+subnational_nc_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2015/"
 
-countries = ["brazil", "indonesia", "japan", "kenya", "mexico", "uk", "us"]
-country_long_names = ["Brazil", "Indonesia", "Japan", "Kenya", "Mexico", "the United Kingdom", "the United States"]
-country_ids = [23, 78, 85, 88, 109, 181, 183]
+countries = ["brazil", "ethiopia", "indonesia", "iran", "japan", "kenya", "mexico", "pakistan", "south_africa", "uk", "us"]
+country_long_names = ["Brazil", "Ethiopia", "Indonesia", "Iran", "Japan", "Kenya", "Mexico", "Pakistan", "South Africa", "the United Kingdom", "the United States"]
+country_ids = [23, 58, 78, 79, 85, 88, 109, 127, 158, 181, 183]
 
 
 def rename_helper(df):
@@ -121,25 +121,61 @@ def gen_output(disease, data, output_description, subnatl_path, is_combined=Fals
         post95_upper = data[14][1]
         post95_lower = data[14][2]
 
-        # if is_combined:
-        #     # Add in subnational data
-        #     for country in countries:
-        #         subnatl_file = f"{country}_{disease}.nc"
-        #         try:
-        #             subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
-        #             subnatl_data = subnatl_wk.data_vars
-        #         except:
-        #             print(f"Error importing {disease} {country} subnational data")
-        #             continue
-        #         post25_mean[:, :] += subnatl_data["post25_mean"].values
-        #         post25_upper[:, :] += subnatl_data["post25_upper"].values
-        #         post25_lower[:, :] += subnatl_data["post25_lower"].values
-        #         post60_mean[:, :] += subnatl_data["post60_mean"].values
-        #         post60_upper[:, :] += subnatl_data["post60_upper"].values
-        #         post60_lower[:, :] += subnatl_data["post60_lower"].values
-        #         post80_mean[:, :] += subnatl_data["post80_mean"].values
-        #         post80_upper[:, :] += subnatl_data["post80_upper"].values
-        #         post80_lower[:, :] += subnatl_data["post80_lower"].values
+        if is_combined:
+            # Add in subnational data
+            for country in countries:
+                subnatl_file = f"{country}_{disease}.nc"
+                try:
+                    subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
+                    subnatl_data = subnatl_wk.data_vars
+                except:
+                    print(f"Error importing {disease} {country} subnational data")
+                    continue
+                age_25_29_mean += subnatl_data["age_25_29_mean"].values
+                age_25_29_upper += subnatl_data["age_25_29_upper"].values
+                age_25_29_lower += subnatl_data["age_25_29_lower"].values
+                age_30_34_mean += subnatl_data["age_30_34_mean"].values
+                age_30_34_upper += subnatl_data["age_30_34_upper"].values
+                age_30_34_lower += subnatl_data["age_30_34_lower"].values
+                age_35_39_mean += subnatl_data["age_35_39_mean"].values
+                age_35_39_upper += subnatl_data["age_35_39_upper"].values
+                age_35_39_lower += subnatl_data["age_35_39_lower"].values
+                age_40_44_mean += subnatl_data["age_40_44_mean"].values
+                age_40_44_upper += subnatl_data["age_40_44_upper"].values
+                age_40_44_lower += subnatl_data["age_40_44_lower"].values
+                age_45_49_mean += subnatl_data["age_45_49_mean"].values
+                age_45_49_upper += subnatl_data["age_45_49_upper"].values
+                age_45_49_lower += subnatl_data["age_45_49_lower"].values
+                age_50_54_mean += subnatl_data["age_50_54_mean"].values
+                age_50_54_upper += subnatl_data["age_50_54_upper"].values
+                age_50_54_lower += subnatl_data["age_50_54_lower"].values
+                age_55_59_mean += subnatl_data["age_55_59_mean"].values
+                age_55_59_upper += subnatl_data["age_55_59_upper"].values
+                age_55_59_lower += subnatl_data["age_55_59_lower"].values
+                age_60_64_mean += subnatl_data["age_60_64_mean"].values
+                age_60_64_upper += subnatl_data["age_60_64_upper"].values
+                age_60_64_lower += subnatl_data["age_60_64_lower"].values
+                age_65_69_mean += subnatl_data["age_65_69_mean"].values
+                age_65_69_upper += subnatl_data["age_65_69_upper"].values
+                age_65_69_lower += subnatl_data["age_65_69_lower"].values
+                age_70_74_mean += subnatl_data["age_70_74_mean"].values
+                age_70_74_upper += subnatl_data["age_70_74_upper"].values
+                age_70_74_lower += subnatl_data["age_70_74_lower"].values
+                age_75_79_mean += subnatl_data["age_75_79_mean"].values
+                age_75_79_upper += subnatl_data["age_75_79_upper"].values
+                age_75_79_lower += subnatl_data["age_75_79_lower"].values
+                age_80_84_mean += subnatl_data["age_80_84_mean"].values
+                age_80_84_upper += subnatl_data["age_80_84_upper"].values
+                age_80_84_lower += subnatl_data["age_80_84_lower"].values
+                age_85_89_mean += subnatl_data["age_85_89_mean"].values
+                age_85_89_upper += subnatl_data["age_85_89_upper"].values
+                age_85_89_lower += subnatl_data["age_85_89_lower"].values
+                age_90_94_mean += subnatl_data["age_90_94_mean"].values
+                age_90_94_upper += subnatl_data["age_90_94_upper"].values
+                age_90_94_lower += subnatl_data["age_90_94_lower"].values
+                post95_mean += subnatl_data["post95_mean"].values
+                post95_upper += subnatl_data["post95_upper"].values
+                post95_lower += subnatl_data["post95_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
@@ -236,22 +272,52 @@ def gen_output(disease, data, output_description, subnatl_path, is_combined=Fals
         post95_upper = data[14][1]
         post95_lower = data[14][2]
 
-        # if is_combined:
-        #     # Add in subnational data
-        #     for country in countries:
-        #         subnatl_file = f"{country}_{disease}.nc"
-        #         try:
-        #             subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
-        #             subnatl_data = subnatl_wk.data_vars
-        #         except:
-        #             print(f"Error importing {disease} {country} subnational data")
-        #             continue
-        #         post65_mean[:, :] += subnatl_data["post65_mean"].values
-        #         post65_upper[:, :] += subnatl_data["post65_upper"].values
-        #         post65_lower[:, :] += subnatl_data["post65_lower"].values
-        #         post75_mean[:, :] += subnatl_data["post75_mean"].values
-        #         post75_upper[:, :] += subnatl_data["post75_upper"].values
-        #         post75_lower[:, :] += subnatl_data["post75_lower"].values
+        if is_combined:
+            # Add in subnational data
+            for country in countries:
+                subnatl_file = f"{country}_{disease}.nc"
+                try:
+                    subnatl_wk = xr.open_dataset(subnatl_path + subnatl_file)
+                    subnatl_data = subnatl_wk.data_vars
+                except:
+                    print(f"Error importing {disease} {country} subnational data")
+                    continue
+                age_40_44_mean += subnatl_data["age_40_44_mean"].values
+                age_40_44_upper += subnatl_data["age_40_44_upper"].values
+                age_40_44_lower += subnatl_data["age_40_44_lower"].values
+                age_45_49_mean += subnatl_data["age_45_49_mean"].values
+                age_45_49_upper += subnatl_data["age_45_49_upper"].values
+                age_45_49_lower += subnatl_data["age_45_49_lower"].values
+                age_50_54_mean += subnatl_data["age_50_54_mean"].values
+                age_50_54_upper += subnatl_data["age_50_54_upper"].values
+                age_50_54_lower += subnatl_data["age_50_54_lower"].values
+                age_55_59_mean += subnatl_data["age_55_59_mean"].values
+                age_55_59_upper += subnatl_data["age_55_59_upper"].values
+                age_55_59_lower += subnatl_data["age_55_59_lower"].values
+                age_60_64_mean += subnatl_data["age_60_64_mean"].values
+                age_60_64_upper += subnatl_data["age_60_64_upper"].values
+                age_60_64_lower += subnatl_data["age_60_64_lower"].values
+                age_65_69_mean += subnatl_data["age_65_69_mean"].values
+                age_65_69_upper += subnatl_data["age_65_69_upper"].values
+                age_65_69_lower += subnatl_data["age_65_69_lower"].values
+                age_70_74_mean += subnatl_data["age_70_74_mean"].values
+                age_70_74_upper += subnatl_data["age_70_74_upper"].values
+                age_70_74_lower += subnatl_data["age_70_74_lower"].values
+                age_75_79_mean += subnatl_data["age_75_79_mean"].values
+                age_75_79_upper += subnatl_data["age_75_79_upper"].values
+                age_75_79_lower += subnatl_data["age_75_79_lower"].values
+                age_80_84_mean += subnatl_data["age_80_84_mean"].values
+                age_80_84_upper += subnatl_data["age_80_84_upper"].values
+                age_80_84_lower += subnatl_data["age_80_84_lower"].values
+                age_85_89_mean += subnatl_data["age_85_89_mean"].values
+                age_85_89_upper += subnatl_data["age_85_89_upper"].values
+                age_85_89_lower += subnatl_data["age_85_89_lower"].values
+                age_90_94_mean += subnatl_data["age_90_94_mean"].values
+                age_90_94_upper += subnatl_data["age_90_94_upper"].values
+                age_90_94_lower += subnatl_data["age_90_94_lower"].values
+                post95_mean += subnatl_data["post95_mean"].values
+                post95_upper += subnatl_data["post95_upper"].values
+                post95_lower += subnatl_data["post95_lower"].values
 
         ds = xr.Dataset(
             data_vars=dict(
@@ -320,13 +386,12 @@ def combined_output():
             print(f"Error importing {disease}")
             continue
         data = rename_helper(data)
-        wk = data[
-            (data["year"] == 2015) & (data["metric_name"] == "Rate")]
+        wk = data[(data["year"] == 2015) & (data["metric_name"] == "Rate")]
         wk = wk.drop(columns=["metric_name", "year"])
-        wk = wk.sort_values(['location_name', 'age_name'])
+        wk = wk.sort_values(["location_name", "age_name"])
 
-        age_groups = sorted(list(set(wk['age_name'].values)))
-        data = np.zeros((len(age_groups), len(data_types), len(latitude), len(longitude)))
+        age_groups = sorted(list(set(wk["age_name"].values)))
+        data = np.zeros((15, len(data_types), len(latitude), len(longitude)))
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -347,7 +412,10 @@ def combined_output():
                         print("Error importing 2015 national baseline files", age_group, j)
                         break
 
-                    data[k, p, :, :] += fractionCountry[j, :, :] * mort
+                    if disease != "Dementia":
+                        data[k, p, :, :] += fractionCountry[j, :, :] * mort
+                    else:
+                        data[k + 3, p, :, :] += fractionCountry[j, :, :] * mort
 
         national_output_path = "D:/CMIP6_data/Mortality/Output/Combined_mortality_baseline_2015/"
         output_file = f"{disease}.nc"
@@ -355,7 +423,7 @@ def combined_output():
                              f"subnational-level data in Brazil, Indonesia, Japan, Kenya, " \
                              f"Mexico, UK, and US and national-level data"
 
-        ds = gen_output(disease, data, output_description, subnational_baseline_path, is_combined=True)
+        ds = gen_output(disease, data, output_description, subnational_nc_path, is_combined=True)
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -377,9 +445,9 @@ def national_output():
         data = rename_helper(data)
         wk = data[(data["year"] == 2015) & (data["metric_name"] == "Rate")]
         wk = wk.drop(columns=["metric_name", "year"])
-        wk = wk.sort_values(['location_name', 'age_name'])
+        wk = wk.sort_values(["location_name", "age_name"])
 
-        age_groups = sorted(list(set(wk['age_name'].values)))
+        age_groups = sorted(list(set(wk["age_name"].values)))
         data = np.zeros((15, len(data_types), len(latitude), len(longitude)))
 
         # Loop through countries
@@ -407,7 +475,7 @@ def national_output():
         output_file = f"{disease}.nc"
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2015, with national-level data only"
 
-        ds = gen_output(disease, data, output_description, subnational_baseline_path)
+        ds = gen_output(disease, data, output_description, subnational_nc_path)
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -432,7 +500,7 @@ def subnational_output():
         for i, disease in enumerate(diseases):
 
             # import mortality baseline
-            base_file = f"{disease}_Subnatl.csv"
+            base_file = f"{disease}.csv"
             try:
                 data = pd.read_csv(base_path + base_file, usecols=[3, 7, 11, 12, 13, 14, 15])
             except:
@@ -440,12 +508,15 @@ def subnational_output():
                 continue
             wk = data[(data["location_name"].isin(states)) & (data["year"] == 2015) & (data["metric_name"] == "Rate")]
             wk = wk.drop(columns=["metric_name", "year"])
-            wk = wk.sort_values(['location_name', 'age_name'])
+            wk = wk.sort_values(["location_name", "age_name"])
 
-            age_groups = sorted(list(set(wk['age_name'].values)))
-            data = np.zeros((len(age_groups), len(data_types), len(latitude), len(longitude)))
+            age_groups = sorted(list(set(wk["age_name"].values)))
+            data = np.zeros((15, len(data_types), len(latitude), len(longitude)))
 
             for j, state in enumerate(states):
+
+                if country_long_name == "Pakistan" and (state == "Azad Jammu & Kashmir" or state == "Gilgit-Baltistan"):
+                    continue
 
                 for k, age_group in enumerate(age_groups):
 
@@ -459,13 +530,16 @@ def subnational_output():
                             print(age_group, state)
                             break
 
-                        data[k, p, :, :] += fractionState[j, :, :] * mort
+                        if disease != "Dementia":
+                            data[k, p, :, :] += fractionState[j, :, :] * mort
+                        else:
+                            data[k + 3, p, :, :] += fractionState[j, :, :] * mort
 
             output_description = f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups " \
                                  f"in 2015 "
             output_file = f"{country}_{disease}.nc"
 
-            ds = gen_output(disease, data, output_description, subnational_baseline_path)
+            ds = gen_output(disease, data, output_description, subnational_nc_path)
             ds.to_netcdf(output_path + output_file)
             ds.close()
 
@@ -483,7 +557,9 @@ def subnational_output():
 
 
 def main():
-    national_output()
+    subnational_output()
+    combined_output()
+    # national_output()
 
 
 if __name__ == "__main__":
