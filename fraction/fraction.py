@@ -19,14 +19,12 @@ def subnational_output():
 
     #### COUNTRY-SPECIFIC INPUT ####
     header_name = "NAME_1"
-    country = "pakistan"
-    country_long_name = "Pakistan"
+    country = "china"
+    country_long_name = "China"
     # left lon, top lat, state names, shape area
     cols = [0, 1, 2, 3]
     to_be_renamed = {
-        "Azad Kashmir": "Azad Jammu & Kashmir",
-        "Islamabad": "Islamabad Capital Territory",
-        "Khyber-Pakhtunkhwa": "Khyber Pakhtunkhwa",
+
     }
     #################################
 
@@ -45,8 +43,8 @@ def subnational_output():
     data = pd.read_csv(area_path + area_file, usecols=cols)
     states = data[header_name].values
     states = sorted(list(set(states)))  # remove duplicates
-    print("States that need a name change:", find_diff(states))
-    input()
+    # print("States that need a name change:", find_diff(states))
+    # input()
 
     # Initialize
     fraction = np.zeros((len(states), 360, 720))
@@ -78,12 +76,12 @@ def subnational_output():
     output_states = [to_be_renamed[x] if x in to_be_renamed else x for x in output_states]
     print(output_states)
 
-    # Combine Federally Administered Tribal Areas and Khyber Pakhtunkhwa
-    fed_ind = output_states.index("Federally Administered Tribal Areas")
-    khy_ind = output_states.index("Khyber Pakhtunkhwa")
-    fraction[khy_ind] += fraction[fed_ind]
-    output_states = np.delete(output_states, [fed_ind])
-    fraction = np.delete(fraction, [fed_ind], axis=0)
+    # # Combine Federally Administered Tribal Areas and Khyber Pakhtunkhwa
+    # fed_ind = output_states.index("Federally Administered Tribal Areas")
+    # khy_ind = output_states.index("Khyber Pakhtunkhwa")
+    # fraction[khy_ind] += fraction[fed_ind]
+    # output_states = np.delete(output_states, [fed_ind])
+    # fraction = np.delete(fraction, [fed_ind], axis=0)
 
     # Output as netCDF
     ds = xr.Dataset(
