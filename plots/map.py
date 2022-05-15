@@ -9,8 +9,8 @@ import cartopy.io.shapereader as shpreader
 import cartopy.crs as ccrs
 import os
 
-ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp585"]
-# ssps = ["ssp370"]
+# ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
+ssps = ["ssp370"]
 diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 # diseases = ["Allcause"]
 
@@ -37,6 +37,15 @@ country_conversion_dict = {
     "South Sudan": "Sudan",
     "Taiwan": "China",
     "Western Sahara": "Morocco",
+}
+pop_ssp_dict = {
+    "ssp119": "ssp1",
+    "ssp126": "ssp1",
+    "ssp245": "ssp2",
+    "ssp370": "ssp3",
+    "ssp434": "ssp2",
+    "ssp460": "ssp2",
+    "ssp585": "ssp1"
 }
 
 shpfilename = shpreader.natural_earth(resolution='110m',
@@ -159,95 +168,92 @@ def findColor(colorbounds, colormap, num):
 
 def ssp_pop_2040_mort():
     cmap = matplotlib.colors.ListedColormap([
-        'darkblue', 'royalblue', 'deepskyblue', 'lightblue',
+        'darkblue', 'deepskyblue',
         'azure', 'wheat', 'gold', 'orange',
-        'red', 'firebrick', 'darkred'
+        'red', 'darkred'
     ])
-    colorbounds = [-10000, -1000, 0, 1000, 3000, 5000, 10000, 30000, 50000, 100000, 500000, 1000000]
+    colorbounds = [-4000, -2000, 0, 2000, 4000, 6000, 8000, 100000, 500000]
     assert len(colorbounds) == cmap.N + 1
     # Define settings
     year_bins = [
         "2015",
         "2040",
     ]
-    ssp = "ssp370"
+
     var_name = "mean"
     age_bins = ["25-60", "60-80", "80+"]
     parentdir = "D:/CMIP6_data/Outputs/Baseline_Ben_2015_National/5_years"
-    outputdir = f"D:/CMIP6_Images/Mortality/map/SSP_pop_2040_mort/2040/{ssp}"
-    os.makedirs(outputdir, exist_ok=True)
 
-    for disease in diseases:
+    for ssp in ssps:
+        pop_ssp = pop_ssp_dict[ssp]
 
-        if disease != "Allcause":
-            continue
+        for disease in diseases:
 
-        # var_name = ['post25'] if disease in ["Allcause", "IHD", "Stroke", "NCD"] else [' Mean']
+            # var_name = ['post25'] if disease in ["Allcause", "IHD", "Stroke", "NCD"] else [' Mean']
 
-        # first index is 2 for diff, 1 for 2040, 0 for 2015
-        # third index represents age cohorts (25-60, 60-80, 80+)
-        data = np.zeros((2 + 1, len(country_codes), 3))
+            # first index is 2 for diff, 1 for 2040, 0 for 2015
+            # third index represents age cohorts (25-60, 60-80, 80+)
+            data = np.zeros((2 + 1, len(country_codes), 3))
 
-        # Aggregate into age cohorts
-        for year_bin_ind, year_bin in enumerate(year_bins):
+            # Aggregate into age cohorts
+            for year_bin_ind, year_bin in enumerate(year_bins):
 
-            # files = sorted(glob(parentdir + ssp + "/*/CountryMortalityAbsolute/" + disease + "_CountryMortalityAbsolute_GEMM.csv"))
-            files = sorted(glob(f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/*_{year_bin}_GEMM.csv"))
-            # files = [x for x in files if year_bin in x]  # Extract models based on year
+                # files = sorted(glob(parentdir + ssp + "/*/CountryMortalityAbsolute/" + disease + "_CountryMortalityAbsolute_GEMM.csv"))
+                files = sorted(glob(f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/*_{year_bin}_GEMM.csv"))
+                # files = [x for x in files if year_bin in x]  # Extract models based on year
 
-            for file in files:
-                wk = pd.read_csv(file, usecols=np.arange(1, 46, 3))
-                # wk = wk.iloc[country_codes].values.flatten()
-                # print(file, np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1).shape)
-                # input()
-                data[year_bin_ind, :, 0] += np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1)
-                data[year_bin_ind, :, 1] += np.sum(wk.iloc[country_codes].values[:, 7:11], axis=1)
-                data[year_bin_ind, :, 2] += np.sum(wk.iloc[country_codes].values[:, 11:15], axis=1)
-            data[year_bin_ind, :, :] /= len(files)
+                for file in files:
+                    wk = pd.read_csv(file, usecols=np.arange(1, 46, 3))
+                    # wk = wk.iloc[country_codes].values.flatten()
+                    # print(file, np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1).shape)
+                    # input()
+                    data[year_bin_ind, :, 0] += np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1)
+                    data[year_bin_ind, :, 1] += np.sum(wk.iloc[country_codes].values[:, 7:11], axis=1)
+                    data[year_bin_ind, :, 2] += np.sum(wk.iloc[country_codes].values[:, 11:15], axis=1)
+                data[year_bin_ind, :, :] /= len(files)
 
-        # Calculate difference
-        # data[2, :, :] = np.divide((data[1, :, :] - data[0, :, :]), data[0, :, :], where=data[0, :, :]!=0)
-        data[2] = np.subtract(data[1], data[0])
-        diff = data[2]
+            # Calculate difference
+            # data[2, :, :] = np.divide((data[1, :, :] - data[0, :, :]), data[0, :, :], where=data[0, :, :]!=0)
+            data[2] = np.subtract(data[1], data[0])
+            diff = data[2]
 
-        for age_bin_ind, age_bin in enumerate(age_bins):
-            fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
-            fig.set_size_inches(16, 12)
-            # ax.add_feature(cartopy.feature.LAND)
-            ax.add_feature(cartopy.feature.OCEAN)
-            ax.add_feature(cartopy.feature.COASTLINE)
-            ax.add_feature(cartopy.feature.BORDERS)
+            for age_bin_ind, age_bin in enumerate(age_bins):
+                fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+                fig.set_size_inches(16, 12)
+                # ax.add_feature(cartopy.feature.LAND)
+                ax.add_feature(cartopy.feature.OCEAN)
+                ax.add_feature(cartopy.feature.COASTLINE)
+                ax.add_feature(cartopy.feature.BORDERS)
 
-            countries = reader.records()
-            for country in countries:
-                cur_name = country.attributes['NAME_LONG']
-                if cur_name in country_conversion_dict:
-                    cur_name = country_conversion_dict[cur_name]
-                if cur_name in country_names:
-                    cur_index = country_names.index(cur_name)
-                    if np.isnan(diff[cur_index, age_bin_ind]):
-                        continue
-                    color = findColor(colorbounds, cmap, diff[cur_index, age_bin_ind])
-                    ax.add_geometries([country.geometry], ccrs.PlateCarree(), facecolor=color)
+                countries = reader.records()
+                for country in countries:
+                    cur_name = country.attributes['NAME_LONG']
+                    if cur_name in country_conversion_dict:
+                        cur_name = country_conversion_dict[cur_name]
+                    if cur_name in country_names:
+                        cur_index = country_names.index(cur_name)
+                        if np.isnan(diff[cur_index, age_bin_ind]):
+                            continue
+                        color = findColor(colorbounds, cmap, diff[cur_index, age_bin_ind])
+                        ax.add_geometries([country.geometry], ccrs.PlateCarree(), facecolor=color)
 
-            norm = matplotlib.colors.BoundaryNorm(colorbounds, cmap.N)
-            cbar = fig.colorbar(
-                matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm), ax=ax,
-                shrink=0.6, ticks=colorbounds, spacing="uniform", format="%d")
-            plt.title(f"Change in Mortality caused by {disease}_{var_name} in scenario {ssp}, age cohort {age_bin} from 2015 to 2040")
+                norm = matplotlib.colors.BoundaryNorm(colorbounds, cmap.N)
+                cbar = fig.colorbar(
+                    matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm), ax=ax,
+                    shrink=0.6, ticks=colorbounds, spacing="uniform", format="%d")
+                cbar.ax.set_ylabel("Change in Mortality")
+                plt.title(f"Change in Mortality caused by {disease}_{var_name} in scenario {ssp}, age cohort {age_bin} from 2015 to 2040")
 
-            # output_file = outputdir + disease + "_" + ssp + "_" + str(var_name)[2:-2] + ".png"
-            output_file = f"{outputdir}/{disease}_{var_name}_{age_bin}.png"
-            # plt.show()
-            plt.savefig(output_file)
-            plt.close(fig)
-            del fig, ax, cbar
-            print(f"DONE: {disease}, {ssp}")
-            print(np.nanmin(diff[:, age_bin_ind]))
-            print(np.nanmax(diff[:, age_bin_ind]))
-
-        # df = pd.DataFrame(data, index=country_names, columns=["2010s", "2090s"])
-        # print(df)
+                outputdir = f"D:/CMIP6_Images/Mortality/map/Baseline_Ben_2015_National/5_years/{ssp}/Pop_{pop_ssp}_var/{disease}_{var_name}/"
+                os.makedirs(outputdir, exist_ok=True)
+                output_file = f"{outputdir}/{age_bin}.png"
+                plt.show()
+                # plt.savefig(output_file)
+                plt.close(fig)
+                del fig, ax, cbar
+                print(f"DONE: {disease}, {ssp}")
+                print(np.nanmin(diff[:, age_bin_ind]))
+                print(np.nanmax(diff[:, age_bin_ind]))
 
 
 def main():
