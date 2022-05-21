@@ -11,8 +11,8 @@ import os
 
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp370"]
-diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
-# diseases = ["Allcause"]
+# diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+diseases = ["Allcause"]
 
 # country_codes = [183, 77, 35]
 # country_names = ["United States of America", "India", "China"]
@@ -163,7 +163,7 @@ def findColor(colorbounds, colormap, num):
             continue
         else:
             return colormap.colors[x - 1]
-    return colormap.colors[len(colorbounds) - 1]
+    return colormap.colors[len(colorbounds) - 2]
 
 
 def ssp_pop_2040_mort():
@@ -172,7 +172,7 @@ def ssp_pop_2040_mort():
         'azure', 'wheat', 'gold', 'orange',
         'red', 'darkred'
     ])
-    colorbounds = [-4000, -2000, 0, 2000, 4000, 6000, 8000, 100000, 500000]
+    colorbounds = [-10000, -5000, 0, 5000, 10000, 15000, 20000, 50000, 100000]
     assert len(colorbounds) == cmap.N + 1
     # Define settings
     year_bins = [
@@ -198,23 +198,34 @@ def ssp_pop_2040_mort():
             # Aggregate into age cohorts
             for year_bin_ind, year_bin in enumerate(year_bins):
 
-                # files = sorted(glob(parentdir + ssp + "/*/CountryMortalityAbsolute/" + disease + "_CountryMortalityAbsolute_GEMM.csv"))
-                files = sorted(glob(f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/*_{year_bin}_GEMM.csv"))
-                # files = [x for x in files if year_bin in x]  # Extract models based on year
+                files_2015 = sorted(glob(f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/*_2015_GEMM.csv"))
+                # MODIFY BASED ON INPUT
+                models = sorted(set([file.split("\\")[-1].split("_")[2] for file in files_2015]))
 
-                for file in files:
-                    wk = pd.read_csv(file, usecols=np.arange(1, 46, 3))
-                    # wk = wk.iloc[country_codes].values.flatten()
-                    # print(file, np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1).shape)
-                    # input()
-                    data[year_bin_ind, :, 0] += np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1)
-                    data[year_bin_ind, :, 1] += np.sum(wk.iloc[country_codes].values[:, 7:11], axis=1)
-                    data[year_bin_ind, :, 2] += np.sum(wk.iloc[country_codes].values[:, 11:15], axis=1)
-                data[year_bin_ind, :, :] /= len(files)
+                # Add or remove models here
+                models = [model for model in models if "EC-Earth3-AerChem" not in model]
+                models = [model for model in models if any(["GFDL-ESM4" == model, "MRI-ESM2-0" == model])]
+
+                for model in models:
+                    files = sorted(glob(
+                            f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/all_ages_{model}*_{year_bin}_GEMM.csv"))
+                    model_means = np.zeros((len(country_codes), 3))
+
+                    for file in files:
+                        wk = pd.read_csv(file, usecols=np.arange(1, 46, 3))
+                        # wk = wk.iloc[country_codes].values.flatten()
+                        # print(file, np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1).shape)
+                        # input()
+                        model_means[:, 0] += np.sum(wk.iloc[country_codes].values[:, 0:7], axis=1)
+                        model_means[:, 1] += np.sum(wk.iloc[country_codes].values[:, 7:11], axis=1)
+                        model_means[:, 2] += np.sum(wk.iloc[country_codes].values[:, 11:15], axis=1)
+                    model_means /= len(files)
+                    data[year_bin_ind] += model_means
+                data[year_bin_ind] /= len(models)
 
             # Calculate difference
             # data[2, :, :] = np.divide((data[1, :, :] - data[0, :, :]), data[0, :, :], where=data[0, :, :]!=0)
-            data[2] = np.subtract(data[1], data[0])
+            data[2] = data[1] - data[0]
             diff = data[2]
 
             for age_bin_ind, age_bin in enumerate(age_bins):
@@ -252,8 +263,7 @@ def ssp_pop_2040_mort():
                 plt.close(fig)
                 del fig, ax, cbar
                 print(f"DONE: {disease}, {ssp}")
-                print(np.nanmin(diff[:, age_bin_ind]))
-                print(np.nanmax(diff[:, age_bin_ind]))
+                print(np.mean(diff[:, age_bin_ind]))
 
 
 def main():
