@@ -8,9 +8,10 @@ from matplotlib.colors import ListedColormap
 import matplotlib
 from netCDF4 import Dataset
 from map import findColor
+import math
 
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
-ssps = ["ssp370"]
+ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 pm25_path = "D:/CMIP6_data/PM2.5_annual"
 country_fraction_path = "D:/CMIP6_data/population/national_pop"
 country_fraction_file = f"{country_fraction_path}/countryFractions_2010_0.5x0.5.nc"
@@ -58,7 +59,8 @@ country = 35
 area = np.sum(fractionCountry[country])
 
 # Set years
-years = [2015, 2030, 2040]
+# years = [2015, 2030, 2040]
+years = [2015]
 
 pop_ssp_dict = {
     "ssp119": "ssp1",
@@ -69,6 +71,21 @@ pop_ssp_dict = {
     "ssp460": "ssp2",
     "ssp585": "ssp1"
 }
+
+
+def calc_grid_area(fractionCountry=np.ones((360, 720))):
+    lon_start = -179.75
+    lat_start = -89.75
+    earth_radius2 = 6371 ** 2
+    deg2rad = math.pi / 180.0
+    dx = 0.5
+    dy = 0.5
+
+    grid_areas = np.zeros((int(180 / dy), int(360 / dx)))
+    for i, lat in enumerate(np.arange(lat_start, 90, dy)):
+        grid_areas[i] = earth_radius2 * math.cos(lat * deg2rad) * (dx * deg2rad) * (dy * deg2rad)
+    output = grid_areas * fractionCountry
+    return output, np.sum(output)
 
 
 def pm25_mean():
@@ -85,7 +102,9 @@ def pm25_mean():
     cmap = ListedColormap(colors)
     norm = matplotlib.colors.BoundaryNorm(np.arange(0, 104, 4), cmap.N)
 
-    print("MIROC, GISS excluded")
+    # Get grid areas for area weighted mean
+    grid_area, tot_area = calc_grid_area(fractionCountry[country])
+
     for i, ssp in enumerate(ssps):
 
         for j, year in enumerate(years):
@@ -93,29 +112,36 @@ def pm25_mean():
             # Compute mean PM2.5 concentration of all models
             files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/*/*/annual_avg_{year}.nc"))
             all_conc = []
+            all_mean = []
             for file in files:
                 if "EC-Earth3" in file:
                     continue # Outlier: extremely large data
-                if "MIROC" in file or "GISS" in file:
-                    continue # Test skip
+                # if "MIROC" in file or "GISS" in file:
+                #     continue # Skip models with only anthropogenic PM2.5
+                if all(model not in file for model in ["GFDL-ESM4", "NorESM2-LM"]):
+                    continue
                 wk = Dataset(file, "r")
                 conc = wk["concpm2p5"][:]
-                # country_conc = conc * fractionCountry[country] * (10 ** 9) # Apply mask to concentration array
-                state_means = np.zeros(len(states))
+                country_conc = conc * fractionCountry[country] * (10 ** 9) # Apply mask to concentration array
 
                 # Compute mean concentration of every province
-                for k, state in enumerate(states):
-                    state_conc = conc * fractionState[k] * (10 ** 9)
-                    state_area = np.sum(fractionState[k])
-                    state_means[k] = np.sum(state_conc) / state_area
-                all_conc.append(state_means)
+                # state_means = np.zeros(len(states))
+                # for k, state in enumerate(states):
+                #     state_conc = conc * fractionState[k] * (10 ** 9)
+                #     state_area = np.sum(fractionState[k])
+                #     state_means[k] = np.sum(state_conc) / state_area
+                # all_conc.append(state_means)
+
+                area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
+
+                all_conc.append(country_conc)
+                all_mean.append(area_weighted_mean)
+
+                model = file.split("mmrpm2p5\\")[1].split("\\annual_avg")[0]
+                print(f"{model}, {area_weighted_mean}")
 
             all_conc = np.mean(all_conc, axis=0)
-
-            norm_conc = all_conc / 100
-
-            # cmap = matplotlib.cm.get_cmap("Spectral_r")
-            # color = cmap(norm_conc)
+            all_mean = np.mean(all_mean, axis=0)
 
             fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
             fig.set_size_inches(12, 8)
@@ -123,20 +149,22 @@ def pm25_mean():
             ax.set_extent([65, 140, 10, 55], ccrs.PlateCarree())
             ax.set_title(f"{year} {ssp}")
 
-            shp_file = "D:/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
-            china_shapes = list(shpreader.Reader(shp_file).geometries())
+            # Import shapefiles for subnational visualization
+            # shp_file = "D:/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
+            # china_shapes = list(shpreader.Reader(shp_file).geometries())
+            #
+            # for k, shape in enumerate(china_shapes):
+            #     color = cmap(norm_conc[k])
+            #     ax.add_geometries([shape], ccrs.PlateCarree(), facecolor=color)
 
-            for k, shape in enumerate(china_shapes):
-                color = cmap(norm_conc[k])
-                ax.add_geometries([shape], ccrs.PlateCarree(), facecolor=color)
-
-            # im = ax.pcolormesh(longitude, latitude, all_conc, vmin=0, vmax=100, cmap=cmap)
-            # fig.colorbar(im, ax=ax)
-            fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+            im = ax.pcolormesh(longitude, latitude, all_conc, vmin=0, vmax=100, cmap=cmap)
+            fig.colorbar(im, ax=ax)
+            # fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
 
             plt.show()
             plt.close(fig)
-            print(f"{ssp} {year} mean: {np.mean(all_conc)}")
+            print(f"{ssp} {year} inter-model AWM: {all_mean}")
+            input()
 
 
 def mortality():
@@ -201,8 +229,9 @@ def mortality():
 
 
 def main():
-    # pm25_mean()
-    mortality()
+    # calc_grid_area(fractionCountry[country])
+    pm25_mean()
+    # mortality()
 
 
 if __name__ == "__main__":
