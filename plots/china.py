@@ -109,39 +109,55 @@ def pm25_mean():
 
         for j, year in enumerate(years):
 
-            # Compute mean PM2.5 concentration of all models
-            files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/*/*/annual_avg_{year}.nc"))
+            models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
             all_conc = []
-            all_mean = []
-            for file in files:
-                if "EC-Earth3" in file:
-                    continue # Outlier: extremely large data
-                # if "MIROC" in file or "GISS" in file:
-                #     continue # Skip models with only anthropogenic PM2.5
-                if all(model not in file for model in ["GFDL-ESM4", "NorESM2-LM"]):
+            all_awm = []
+
+            for model in models:
+                # Outlier: extremely large data
+                if model == "EC-Earth3":
                     continue
-                wk = Dataset(file, "r")
-                conc = wk["concpm2p5"][:]
-                country_conc = conc * fractionCountry[country] * (10 ** 9) # Apply mask to concentration array
+                # Skip models that do not include natural PM2.5 sources (anthropogenic only)
+                if model not in ["GFDL-ESM4", "NorESM2-LM", "NorESM2-MM"]:
+                    continue
 
-                # Compute mean concentration of every province
-                # state_means = np.zeros(len(states))
-                # for k, state in enumerate(states):
-                #     state_conc = conc * fractionState[k] * (10 ** 9)
-                #     state_area = np.sum(fractionState[k])
-                #     state_means[k] = np.sum(state_conc) / state_area
-                # all_conc.append(state_means)
+                # Compute mean PM2.5 concentration of all realizations
+                files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/{model}/*/annual_avg_{year}.nc"))
+                model_conc = []
+                model_awm = []
 
-                area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
+                for file in files:
 
-                all_conc.append(country_conc)
-                all_mean.append(area_weighted_mean)
+                    # Import concentration NC file
+                    wk = Dataset(file, "r")
+                    conc = wk["concpm2p5"][:]
 
-                model = file.split("mmrpm2p5\\")[1].split("\\annual_avg")[0]
-                print(f"{model}, {area_weighted_mean}")
+                    # Calculate concentration and means
+                    country_conc = conc * fractionCountry[country] * (10 ** 9) # Apply mask to concentration array
+                    area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
+
+                    # Compute mean concentration of every province
+                    # state_means = np.zeros(len(states))
+                    # for k, state in enumerate(states):
+                    #     state_conc = conc * fractionState[k] * (10 ** 9)
+                    #     state_area = np.sum(fractionState[k])
+                    #     state_means[k] = np.sum(state_conc) / state_area
+                    # all_conc.append(state_means)
+
+                    model_conc.append(country_conc)
+                    model_awm.append(area_weighted_mean)
+
+                    real = file.split("mmrpm2p5/")[1].split("\\annual_avg")[0]
+                    # print(f"{real}, {area_weighted_mean}")
+
+                model_conc = np.mean(model_conc, axis=0)
+                model_awm = np.mean(model_awm, axis=0)
+                all_conc.append(model_conc)
+                all_awm.append(model_awm)
+                print(f"{model}, {model_awm}")
 
             all_conc = np.mean(all_conc, axis=0)
-            all_mean = np.mean(all_mean, axis=0)
+            all_awm = np.mean(all_awm, axis=0)
 
             fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
             fig.set_size_inches(12, 8)
@@ -161,10 +177,9 @@ def pm25_mean():
             fig.colorbar(im, ax=ax)
             # fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
 
-            plt.show()
+            # plt.show()
             plt.close(fig)
-            print(f"{ssp} {year} inter-model AWM: {all_mean}")
-            input()
+            print(f"{ssp} {year} inter-model AWM: {all_awm}")
 
 
 def mortality():
@@ -179,7 +194,6 @@ def mortality():
     for i, ssp in enumerate(ssps):
         pop_ssp = pop_ssp_dict[ssp]
         for j, year in enumerate(years):
-
             files = sorted(glob(f"{mort_dir}/{ssp}/*/MortalityAbsolute/Allcause_mean/*{year}_GEMM.nc"))
             all_deaths = []
             for file in files:
