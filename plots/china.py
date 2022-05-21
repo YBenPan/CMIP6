@@ -73,7 +73,7 @@ pop_ssp_dict = {
 }
 
 
-def calc_grid_area(fractionCountry=np.ones((360, 720))):
+def get_grid_area(fractionCountry=np.ones((360, 720))):
     lon_start = -179.75
     lat_start = -89.75
     earth_radius2 = 6371 ** 2
@@ -84,8 +84,19 @@ def calc_grid_area(fractionCountry=np.ones((360, 720))):
     grid_areas = np.zeros((int(180 / dy), int(360 / dx)))
     for i, lat in enumerate(np.arange(lat_start, 90, dy)):
         grid_areas[i] = earth_radius2 * math.cos(lat * deg2rad) * (dx * deg2rad) * (dy * deg2rad)
-    output = grid_areas * fractionCountry
-    return output, np.sum(output)
+    grid_areas = grid_areas * fractionCountry
+    tot_area = np.sum(grid_areas)
+    return grid_areas, tot_area
+
+
+def get_pop(fractionCountry=np.ones((360, 720))):
+    pop_path = "D:/CMIP6_data/population/gridded_pop/ssp1"
+    pop_file = f"{pop_path}/ssp1_tot_2020.nc"
+    f1 = Dataset(pop_file, "r")
+    pop = f1["population"][:] * fractionCountry
+    tot_pop = np.sum(pop)
+    f1.close()
+    return pop, tot_pop
 
 
 def pm25_mean():
@@ -103,7 +114,10 @@ def pm25_mean():
     norm = matplotlib.colors.BoundaryNorm(np.arange(0, 104, 4), cmap.N)
 
     # Get grid areas for area weighted mean
-    grid_area, tot_area = calc_grid_area(fractionCountry[country])
+    grid_area, tot_area = get_grid_area(fractionCountry[country])
+
+    # Get population for population weighted mean
+    pop, tot_pop = get_pop(fractionCountry[country])
 
     for i, ssp in enumerate(ssps):
 
@@ -112,19 +126,21 @@ def pm25_mean():
             models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
             all_conc = []
             all_awm = []
+            all_pwm = []
 
             for model in models:
                 # Outlier: extremely large data
-                if model == "EC-Earth3":
+                if "EC-Earth3" in model:
                     continue
                 # Skip models that do not include natural PM2.5 sources (anthropogenic only)
-                if model not in ["GFDL-ESM4", "NorESM2-LM", "NorESM2-MM"]:
+                if model not in ["GFDL-ESM4", "MRI-ESM2-0"]:
                     continue
 
                 # Compute mean PM2.5 concentration of all realizations
                 files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/{model}/*/annual_avg_{year}.nc"))
                 model_conc = []
                 model_awm = []
+                model_pwm = []
 
                 for file in files:
 
@@ -135,6 +151,7 @@ def pm25_mean():
                     # Calculate concentration and means
                     country_conc = conc * fractionCountry[country] * (10 ** 9) # Apply mask to concentration array
                     area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
+                    pop_weighted_mean = np.sum(pop * country_conc) / tot_pop
 
                     # Compute mean concentration of every province
                     # state_means = np.zeros(len(states))
@@ -146,18 +163,21 @@ def pm25_mean():
 
                     model_conc.append(country_conc)
                     model_awm.append(area_weighted_mean)
+                    model_pwm.append(pop_weighted_mean)
 
-                    real = file.split("mmrpm2p5/")[1].split("\\annual_avg")[0]
-                    # print(f"{real}, {area_weighted_mean}")
+                    # real = file.split("mmrpm2p5/")[1].split("\\annual_avg")[0]
 
                 model_conc = np.mean(model_conc, axis=0)
                 model_awm = np.mean(model_awm, axis=0)
+                model_pwm = np.mean(model_pwm, axis=0)
                 all_conc.append(model_conc)
                 all_awm.append(model_awm)
-                print(f"{model}, {model_awm}")
+                all_pwm.append(model_pwm)
+                print(f"{model}: PWM: {np.round(model_pwm, 2)}, AWM: {np.round(model_awm, 2)}")
 
             all_conc = np.mean(all_conc, axis=0)
             all_awm = np.mean(all_awm, axis=0)
+            all_pwm = np.mean(all_pwm, axis=0)
 
             fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
             fig.set_size_inches(12, 8)
@@ -179,7 +199,7 @@ def pm25_mean():
 
             # plt.show()
             plt.close(fig)
-            print(f"{ssp} {year} inter-model AWM: {all_awm}")
+            print(f"{ssp} {year} inter-model PWM: {np.round(all_pwm, 2)}, AWM: {np.round(all_awm, 2)}")
 
 
 def mortality():
@@ -243,7 +263,8 @@ def mortality():
 
 
 def main():
-    # calc_grid_area(fractionCountry[country])
+    # get_pop(fractionCountry[country])
+    # get_grid_area(fractionCountry[country])
     pm25_mean()
     # mortality()
 
