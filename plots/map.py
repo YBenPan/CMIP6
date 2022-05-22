@@ -166,6 +166,19 @@ def findColor(colorbounds, colormap, num):
     return colormap.colors[len(colorbounds) - 2]
 
 
+def output_diff(data, diff_file, ssp, models):
+    if ssp == ssps[0] and os.path.exists(diff_file):
+        os.remove(diff_file)
+    with open(diff_file, "a") as file:
+        if ssp == ssps[0] and os.path.exists(diff_file):
+            file.write("SSP,Model,Diff,Pct_change\n")
+        for i, model in enumerate(models):
+            print(
+                f"{model}: Diff: {np.round(np.sum(data[1, i, :, :] - data[0, i, :, :]), 0)}, Percent Change: {np.round(np.sum(data[1, i, :, :] - data[0, i, :, :]) / np.sum(data[0, i, :, :]), 2)}")
+            file.write(
+                f"{ssp},{model},{np.sum(data[1, i, :, :] - data[0, i, :, :])},{np.sum(data[1, i, :, :] - data[0, i, :, :]) / np.sum(data[0, i, :, :])}\n")
+
+
 def ssp_pop_2040_mort():
     cmap = matplotlib.colors.ListedColormap([
         'darkblue', 'deepskyblue',
@@ -192,21 +205,24 @@ def ssp_pop_2040_mort():
             # var_name = ['post25'] if disease in ["Allcause", "IHD", "Stroke", "NCD"] else [' Mean']
 
             # first index is 2 for diff, 1 for 2040, 0 for 2015
+            # second index represents model
             # third index represents age cohorts (25-60, 60-80, 80+)
-            data = np.zeros((2 + 1, len(country_codes), 3))
+            # fourth index represents country
+            data = np.zeros((2 + 1, 10, len(country_codes), 3))
+
+            files_2015 = sorted(
+                glob(f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/*_2015_GEMM.csv"))
+            # MODIFY BASED ON INPUT
+            models = sorted(set([file.split("\\")[-1].split("_")[2] for file in files_2015]))
+
+            # Add or remove models here
+            models = [model for model in models if "EC-Earth3-AerChem" not in model]
+            # models = [model for model in models if any(["GFDL-ESM4" == model, "MRI-ESM2-0" == model])]
 
             # Aggregate into age cohorts
             for year_bin_ind, year_bin in enumerate(year_bins):
 
-                files_2015 = sorted(glob(f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/*_2015_GEMM.csv"))
-                # MODIFY BASED ON INPUT
-                models = sorted(set([file.split("\\")[-1].split("_")[2] for file in files_2015]))
-
-                # Add or remove models here
-                models = [model for model in models if "EC-Earth3-AerChem" not in model]
-                models = [model for model in models if any(["GFDL-ESM4" == model, "MRI-ESM2-0" == model])]
-
-                for model in models:
+                for i, model in enumerate(models):
                     files = sorted(glob(
                             f"{parentdir}/{ssp}/*/CountryMortalityAbsolute/{disease}_{var_name}/all_ages_{model}*_{year_bin}_GEMM.csv"))
                     model_means = np.zeros((len(country_codes), 3))
@@ -220,13 +236,20 @@ def ssp_pop_2040_mort():
                         model_means[:, 1] += np.sum(wk.iloc[country_codes].values[:, 7:11], axis=1)
                         model_means[:, 2] += np.sum(wk.iloc[country_codes].values[:, 11:15], axis=1)
                     model_means /= len(files)
-                    data[year_bin_ind] += model_means
-                data[year_bin_ind] /= len(models)
+                    data[year_bin_ind, i] = model_means
+
+            # Output inter-model differences if needed
+            output_diff(data=data, diff_file=f"{parentdir}/diff.csv", ssp=ssp, models=models)
+
+            # Take the mean
+            data /= len(models)
+            data[0, 0] = np.sum(data[0, 1:], axis=0)
+            data[1, 0] = np.sum(data[1, 1:], axis=0)
 
             # Calculate difference
             # data[2, :, :] = np.divide((data[1, :, :] - data[0, :, :]), data[0, :, :], where=data[0, :, :]!=0)
             data[2] = data[1] - data[0]
-            diff = data[2]
+            diff = data[2, 0]
 
             for age_bin_ind, age_bin in enumerate(age_bins):
                 fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
