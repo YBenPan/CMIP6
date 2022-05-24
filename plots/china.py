@@ -16,61 +16,33 @@ pm25_path = "D:/CMIP6_data/PM2.5_annual"
 country_fraction_path = "D:/CMIP6_data/population/national_pop"
 country_fraction_file = f"{country_fraction_path}/countryFractions_2010_0.5x0.5.nc"
 
-# Import country fraction
-f1 = Dataset(country_fraction_file, "r")
-fractionCountry = f1.variables["fractionCountry"][
-    :, :, :
-]  # countryIndex, latitude, longitude
-latitude = f1.variables["latitude"][:]
-longitude = f1.variables["longitude"][:]
-fractionCountry[fractionCountry < 0.0] = 0.0
-fractionCountry[fractionCountry > 1.0] = 1.0
-# Change Longitude from -180 to 180 to 0 to 360 for ease of computation
-fractionCountry = np.concatenate(
-    [
-        fractionCountry[:, :, len(longitude) // 2 :],
-        fractionCountry[:, :, : len(longitude) // 2],
-    ],
-    axis=2,
-)
-longitude = np.arange(0.25, 360, 0.5)
 
-# Import China fraction
-china_fraction_file = "D:/CMIP6_data/fraction/china_state_fraction_0.5x0.5.nc"
-f1 = Dataset(china_fraction_file, "r")
-fractionState = f1.variables["fractionState"][
-    :, :, :
-]  # state, latitude, longitude
-states = f1.variables["state"][:]
-f1.close()
-fractionState[fractionState < 0.0] = 0.0
-fractionState[fractionState > 1.0] = 1.0
-# Change Longitude from -180 to 180 to 0 to 360 for ease of computation
-fractionState = np.concatenate(
-    [
-        fractionState[:, :, len(longitude) // 2 :],
-        fractionState[:, :, : len(longitude) // 2],
-    ],
-    axis=2,
-)
+def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_file="countryFractions_2010_0.5x0.5.nc", country=-1):
+    # If no country is supplied, then return uniform mask
+    if country == -1:
+        return np.ones((360, 720))
 
-# Settings for China
-country = 35
-area = np.sum(fractionCountry[country])
+    f1 = Dataset(base_path + base_file, "r")
+    fractionCountry = f1.variables["fractionCountry"][
+                      :, :, :
+                      ]  # countryIndex, latitude, longitude
+    latitude = f1.variables["latitude"][:]
+    longitude = f1.variables["longitude"][:]
+    f1.close()
 
-# Set years
-# years = [2015, 2030, 2040]
-years = [2015]
+    fractionCountry[fractionCountry < 0.0] = 0.0
+    fractionCountry[fractionCountry > 1.0] = 0.0
 
-pop_ssp_dict = {
-    "ssp119": "ssp1",
-    "ssp126": "ssp1",
-    "ssp245": "ssp2",
-    "ssp370": "ssp3",
-    "ssp434": "ssp2",
-    "ssp460": "ssp2",
-    "ssp585": "ssp1"
-}
+    # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
+    fractionCountry = np.concatenate(
+        [
+            fractionCountry[:, :, len(longitude) // 2:],
+            fractionCountry[:, :, : len(longitude) // 2],
+        ],
+        axis=2,
+    )
+
+    return fractionCountry[country]
 
 
 def get_grid_area(fractionCountry=np.ones((360, 720))):
@@ -99,6 +71,112 @@ def get_pop(fractionCountry=np.ones((360, 720))):
     return pop, tot_pop
 
 
+latitude = np.arange(-89.75, 90.25, 0.5)
+longitude = np.arange(0.25, 360, 0.5)
+
+# Get China mask
+fractionCountry = get_country_mask(country=35)
+
+# Get grid areas for area weighted mean
+grid_area, tot_area = get_grid_area(fractionCountry)
+
+# Get population for population weighted mean
+pop, tot_pop = get_pop(fractionCountry)
+
+# Import China fraction
+china_fraction_file = "D:/CMIP6_data/fraction/china_state_fraction_0.5x0.5.nc"
+f1 = Dataset(china_fraction_file, "r")
+fractionState = f1.variables["fractionState"][
+    :, :, :
+]  # state, latitude, longitude
+states = f1.variables["state"][:]
+f1.close()
+fractionState[fractionState < 0.0] = 0.0
+fractionState[fractionState > 1.0] = 1.0
+# Change Longitude from -180 to 180 to 0 to 360 for ease of computation
+fractionState = np.concatenate(
+    [
+        fractionState[:, :, len(longitude) // 2:],
+        fractionState[:, :, : len(longitude) // 2],
+    ],
+    axis=2,
+)
+
+# Set years
+# years = [2015, 2030, 2040]
+years = [2015]
+
+pop_ssp_dict = {
+    "ssp119": "ssp1",
+    "ssp126": "ssp1",
+    "ssp245": "ssp2",
+    "ssp370": "ssp3",
+    "ssp434": "ssp2",
+    "ssp460": "ssp2",
+    "ssp585": "ssp1"
+}
+
+
+def mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop):
+    all_conc = []
+    all_awm = []
+    all_pwm = []
+
+    for model in models:
+        # Outlier: extremely large data
+        if "EC-Earth3" in model:
+            continue
+        if "IPSL" in model or "MPI" in model:
+            continue
+        # Skip models that do not include natural PM2.5 sources (anthropogenic only)
+        # if model not in ["GFDL-ESM4", "MRI-ESM2-0"]:
+        #     continue
+
+        # Compute mean PM2.5 concentration of all realizations
+        files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/{model}/*/annual_avg_{year}.nc"))
+        if len(files) == 0:
+            continue
+        model_conc = []
+        model_awm = []
+        model_pwm = []
+
+        for file in files:
+            # Import concentration NC file
+            wk = Dataset(file, "r")
+            conc = wk["concpm2p5"][:]
+
+            # Calculate concentration and means
+            country_conc = conc * fractionCountry * (10 ** 9)  # Apply mask to concentration array
+            area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
+            pop_weighted_mean = np.sum(pop * country_conc) / tot_pop
+
+            # Compute mean concentration of every province
+            # state_means = np.zeros(len(states))
+            # for k, state in enumerate(states):
+            #     state_conc = conc * fractionState[k] * (10 ** 9)
+            #     state_area = np.sum(fractionState[k])
+            #     state_means[k] = np.sum(state_conc) / state_area
+            # all_conc.append(state_means)
+
+            model_conc.append(country_conc)
+            model_awm.append(area_weighted_mean)
+            model_pwm.append(pop_weighted_mean)
+
+            # real = file.split("mmrpm2p5/")[1].split("\\annual_avg")[0]
+
+        model_conc = np.mean(model_conc, axis=0)
+        model_awm = np.mean(model_awm, axis=0)
+        model_pwm = np.mean(model_pwm, axis=0)
+        all_conc.append(model_conc)
+        all_awm.append(model_awm)
+        all_pwm.append(model_pwm)
+        print(f"{model}: PWM: {np.round(model_pwm, 2)}, AWM: {np.round(model_awm, 2)}")
+    all_conc = np.mean(all_conc, axis=0)
+    all_awm = np.mean(all_awm, axis=0)
+    all_pwm = np.mean(all_pwm, axis=0)
+    return all_conc, all_awm, all_pwm
+
+
 def pm25_mean():
     # Set colors
     colors = [(228, 245, 253), (204, 236, 249), (178, 225, 251), (149, 212, 243), (127, 191, 227), (103, 174, 220),
@@ -113,71 +191,13 @@ def pm25_mean():
     cmap = ListedColormap(colors)
     norm = matplotlib.colors.BoundaryNorm(np.arange(0, 104, 4), cmap.N)
 
-    # Get grid areas for area weighted mean
-    grid_area, tot_area = get_grid_area(fractionCountry[country])
-
-    # Get population for population weighted mean
-    pop, tot_pop = get_pop(fractionCountry[country])
-
     for i, ssp in enumerate(ssps):
 
         for j, year in enumerate(years):
 
             models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
-            all_conc = []
-            all_awm = []
-            all_pwm = []
 
-            for model in models:
-                # Outlier: extremely large data
-                if "EC-Earth3" in model:
-                    continue
-                # Skip models that do not include natural PM2.5 sources (anthropogenic only)
-                if model not in ["GFDL-ESM4", "MRI-ESM2-0"]:
-                    continue
-
-                # Compute mean PM2.5 concentration of all realizations
-                files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/{model}/*/annual_avg_{year}.nc"))
-                model_conc = []
-                model_awm = []
-                model_pwm = []
-
-                for file in files:
-
-                    # Import concentration NC file
-                    wk = Dataset(file, "r")
-                    conc = wk["concpm2p5"][:]
-
-                    # Calculate concentration and means
-                    country_conc = conc * fractionCountry[country] * (10 ** 9) # Apply mask to concentration array
-                    area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
-                    pop_weighted_mean = np.sum(pop * country_conc) / tot_pop
-
-                    # Compute mean concentration of every province
-                    # state_means = np.zeros(len(states))
-                    # for k, state in enumerate(states):
-                    #     state_conc = conc * fractionState[k] * (10 ** 9)
-                    #     state_area = np.sum(fractionState[k])
-                    #     state_means[k] = np.sum(state_conc) / state_area
-                    # all_conc.append(state_means)
-
-                    model_conc.append(country_conc)
-                    model_awm.append(area_weighted_mean)
-                    model_pwm.append(pop_weighted_mean)
-
-                    # real = file.split("mmrpm2p5/")[1].split("\\annual_avg")[0]
-
-                model_conc = np.mean(model_conc, axis=0)
-                model_awm = np.mean(model_awm, axis=0)
-                model_pwm = np.mean(model_pwm, axis=0)
-                all_conc.append(model_conc)
-                all_awm.append(model_awm)
-                all_pwm.append(model_pwm)
-                print(f"{model}: PWM: {np.round(model_pwm, 2)}, AWM: {np.round(model_awm, 2)}")
-
-            all_conc = np.mean(all_conc, axis=0)
-            all_awm = np.mean(all_awm, axis=0)
-            all_pwm = np.mean(all_pwm, axis=0)
+            all_conc, all_awm, all_pwm = mean(models, ssp, year)
 
             fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
             fig.set_size_inches(12, 8)
