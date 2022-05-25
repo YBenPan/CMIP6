@@ -8,7 +8,7 @@ from matplotlib.colors import ListedColormap
 import matplotlib
 from netCDF4 import Dataset
 from map import findColor
-from PM25_plots import mean, get_country_mask, get_grid_area, get_pop
+from PM25_plots import mean, get_country_mask, get_grid_area, get_pop, map_plot
 import math
 
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
@@ -75,7 +75,7 @@ def pm25_mean():
         color = tuple(x / 256 for x in color)
         colors[i] = color
     cmap = ListedColormap(colors)
-    norm = matplotlib.colors.BoundaryNorm(np.arange(0, 104, 4), cmap.N)
+    # norm = matplotlib.colors.BoundaryNorm(np.arange(0, 104, 4), cmap.N)
 
     for i, ssp in enumerate(ssps):
 
@@ -85,26 +85,8 @@ def pm25_mean():
 
             all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop)
 
-            fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
-            fig.set_size_inches(12, 8)
-            ax.coastlines(resolution='10m')
-            ax.set_extent([65, 140, 10, 55], ccrs.PlateCarree())
-            ax.set_title(f"{year} {ssp}")
+            map_plot(year, ssp, longitude, latitude, all_conc, cmap, [65, 140, 10, 55])
 
-            # Import shapefiles for subnational visualization
-            # shp_file = "D:/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
-            # china_shapes = list(shpreader.Reader(shp_file).geometries())
-            #
-            # for k, shape in enumerate(china_shapes):
-            #     color = cmap(norm_conc[k])
-            #     ax.add_geometries([shape], ccrs.PlateCarree(), facecolor=color)
-
-            im = ax.pcolormesh(longitude, latitude, all_conc, vmin=0, vmax=100, cmap=cmap)
-            fig.colorbar(im, ax=ax)
-            # fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-
-            # plt.show()
-            plt.close(fig)
             print(f"{ssp} {year} inter-model PWM: {np.round(all_pwm, 2)}, AWM: {np.round(all_awm, 2)}")
 
 

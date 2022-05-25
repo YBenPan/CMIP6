@@ -5,14 +5,18 @@ import pandas as pd
 import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 from netCDF4 import Dataset
 import math
+import cartopy.crs as ccrs
 
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 # years = [2015, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 years = np.arange(2015, 2105, 10)
 pm25_path = "D:/CMIP6_data/PM2.5_annual"
+latitude = np.arange(-89.75, 90.25, 0.5)
+longitude = np.arange(0.25, 360.25, 0.5)
 
 
 def mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop):
@@ -130,7 +134,7 @@ def get_pop(fractionCountry=np.ones((360, 720))):
 
 
 # Get country mask
-fractionCountry = get_country_mask(country=183)
+fractionCountry = get_country_mask()
 
 # Get grid areas for area weighted mean
 grid_area, tot_area = get_grid_area(fractionCountry)
@@ -174,9 +178,62 @@ def line():
     # plt.savefig("D:/CMIP6_Images/PM2.5/us.png")
 
 
+def map_plot(year, ssp, longitude, latitude, all_conc, cmap, vmin=0, vmax=100, country="the World", **kwargs):
+    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(12, 8)
+    ax.coastlines(resolution='10m')
+    if "extent" in kwargs:
+        ax.set_extent(kwargs["extent"], ccrs.PlateCarree())
+    ax.set_title(f"PM2.5 Concentration in {country} in {year}, {ssp}")
+
+    # Import shapefiles for subnational visualization
+    # shp_file = "D:/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
+    # china_shapes = list(shpreader.Reader(shp_file).geometries())
+    #
+    # for k, shape in enumerate(china_shapes):
+    #     color = cmap(norm_conc[k])
+    #     ax.add_geometries([shape], ccrs.PlateCarree(), facecolor=color)
+
+    im = ax.pcolormesh(longitude, latitude, all_conc, vmin=vmin, vmax=vmax, cmap=cmap)
+    fig.colorbar(im, ax=ax)
+    # fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+
+    # plt.show()
+    if "output_dir" in kwargs:
+        output_dir = kwargs["output_dir"]
+        os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(f"{output_dir}/{year}.png")
+    plt.close(fig)
+
+
+def map():
+    # Set colors
+    colors = [(228, 245, 253), (204, 236, 249), (178, 225, 251), (149, 212, 243), (127, 191, 227), (103, 174, 220),
+              (85, 151, 211), (69, 148, 185), (72, 158, 145), (71, 168, 114), (69, 181, 83), (114, 196, 72),
+              (163, 208, 83), (208, 219, 91),
+              (251, 230, 89), (248, 196, 76), (246, 162, 64), (244, 131, 53), (241, 98, 40), (238, 76, 38),
+              (228, 56, 40), (220, 37, 41),
+              (200, 29, 37), (180, 27, 32), (165, 24, 30)]
+    for i, color in enumerate(colors):
+        color = tuple(x / 256 for x in color)
+        colors[i] = color
+    cmap = ListedColormap(colors)
+
+    pm25_path = "D:/CMIP6_data/PM2.5_annual"
+
+    for i, ssp in enumerate(ssps):
+
+        for j, year in enumerate(years):
+            models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
+
+            all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop)
+
+            map_plot(year, ssp, longitude, latitude, all_conc, cmap, output_dir=f"D:/CMIP6_Images/PM2.5/map/{ssp}")
+
+
 def main():
-    line()
-    # map()
+    # line()
+    map()
 
 
 if __name__ == "__main__":
