@@ -3,15 +3,15 @@ from glob import glob
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib as mpl
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from netCDF4 import Dataset
 import math
 import cartopy.crs as ccrs
 
-# ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
-ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
+# ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 # years = [2015, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 years = np.arange(2015, 2105, 10)
 pm25_path = "D:/CMIP6_data/PM2.5_annual"
@@ -178,13 +178,12 @@ def line():
     # plt.savefig("D:/CMIP6_Images/PM2.5/us.png")
 
 
-def map_plot(year, ssp, longitude, latitude, all_conc, cmap, vmin=0, vmax=100, country="the World", **kwargs):
-    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
-    fig.set_size_inches(12, 8)
+def map_plot(year, ssp, longitude, latitude, all_conc, fig, ax, cmap, norm, vmin=0, vmax=100, country="the World", **kwargs):
+
     ax.coastlines(resolution='10m')
     if "extent" in kwargs:
         ax.set_extent(kwargs["extent"], ccrs.PlateCarree())
-    ax.set_title(f"PM2.5 Concentration in {country} in {year}, {ssp}")
+    ax.set_title(f"{year}")
 
     # Import shapefiles for subnational visualization
     # shp_file = "D:/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
@@ -195,15 +194,10 @@ def map_plot(year, ssp, longitude, latitude, all_conc, cmap, vmin=0, vmax=100, c
     #     ax.add_geometries([shape], ccrs.PlateCarree(), facecolor=color)
 
     im = ax.pcolormesh(longitude, latitude, all_conc, vmin=vmin, vmax=vmax, cmap=cmap)
-    fig.colorbar(im, ax=ax)
+    # fig.colorbar(im, ax=ax)
     # fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
 
     # plt.show()
-    if "output_dir" in kwargs:
-        output_dir = kwargs["output_dir"]
-        os.makedirs(output_dir, exist_ok=True)
-        plt.savefig(f"{output_dir}/{year}.png")
-    plt.close(fig)
 
 
 def map():
@@ -219,16 +213,50 @@ def map():
         colors[i] = color
     cmap = ListedColormap(colors)
 
+    bounds = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 20, 40, 60, 80]
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
+
+    vmin = 0
+    vmax = 80
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
     pm25_path = "D:/CMIP6_data/PM2.5_annual"
 
     for i, ssp in enumerate(ssps):
+
+        fig, axes = plt.subplots(3, 3, subplot_kw={"projection": ccrs.PlateCarree()})
+        fig.set_size_inches(12, 8)
+
+        fig.suptitle(f"PM2.5 concentration in {ssp}")
 
         for j, year in enumerate(years):
             models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
 
             all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop)
 
-            map_plot(year, ssp, longitude, latitude, all_conc, cmap, output_dir=f"D:/CMIP6_Images/PM2.5/map/{ssp}")
+            ax_i = j // 3
+            ax_j = j % 3
+
+            map_plot(year, ssp, longitude, latitude, all_conc, vmin=vmin, vmax=vmax, fig=fig, ax=axes[ax_i, ax_j], cmap=cmap, norm=norm)
+
+            print(f"{ssp} {year} inter-model PWM: {np.round(all_pwm, 2)}, AWM: {np.round(all_awm, 2)}")
+
+        output_dir=f"D:/CMIP6_Images/PM2.5/map"
+        os.makedirs(output_dir, exist_ok=True)
+        fig.tight_layout()
+        cbar = fig.colorbar(
+            matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
+            ax=axes.ravel().tolist(),
+            ticks=[0, 5, 10, 20, 40, 60, 80],
+            spacing="proportional",
+            shrink=0.9
+        )
+        cbar.set_label("Concentration (μg / m^3)")
+        # plt.show()
+        plt.savefig(f"{output_dir}/global_{ssp}.png")
+        plt.close(fig)
+
+
 
 
 def main():
