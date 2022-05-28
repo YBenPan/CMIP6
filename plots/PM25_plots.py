@@ -79,7 +79,8 @@ def mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop):
     return all_conc, all_awm, all_pwm
 
 
-def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_file="countryFractions_2010_0.5x0.5.nc", country=-1):
+def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_file="countryFractions_2010_0.5x0.5.nc",
+                     country=-1, output=False):
     # If no country is supplied, then return uniform mask
     if country == -1:
         return np.ones((360, 720))
@@ -95,14 +96,33 @@ def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_fi
     fractionCountry[fractionCountry < 0.0] = 0.0
     fractionCountry[fractionCountry > 1.0] = 0.0
 
-    # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
-    fractionCountry = np.concatenate(
-        [
-            fractionCountry[:, :, len(longitude) // 2:],
-            fractionCountry[:, :, : len(longitude) // 2],
-        ],
-        axis=2,
-    )
+    # # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
+    # fractionCountry = np.concatenate(
+    #     [
+    #         fractionCountry[:, :, len(longitude) // 2:],
+    #         fractionCountry[:, :, : len(longitude) // 2],
+    #     ],
+    #     axis=2,
+    # )
+
+    us_fraction = fractionCountry[country]
+
+    output_path = "D:/CMIP6_data/population/national_pop"
+    output_file = f"{output_path}/us_mask.nc"
+    ds = Dataset(output_file, "w", format="NETCDF4")
+    ds.createDimension("latitude", len(latitude))
+    ds.createDimension("longitude", len(longitude))
+    lats = ds.createVariable("latitude", "f4", ("latitude",))
+    lons = ds.createVariable("longitude", "f4", ("longitude",))
+    fractions = ds.createVariable("us_fraction", "f4", ("latitude", "longitude"))
+    lats[:] = latitude
+    lons[:] = longitude
+    fractions[:, :] = us_fraction
+    lats.units = "degrees_north"
+    lons.units = "degress_east"
+    ds.description = "Country mask for the United States on a grid with resolution 0.5 deg x0.5 deg"
+    ds.contact = "Yuhao (Ben) Pan - ybenp8104@gmail.com"
+    ds.close()
 
     return fractionCountry[country]
 
@@ -134,7 +154,7 @@ def get_pop(fractionCountry=np.ones((360, 720))):
 
 
 # Get country mask
-fractionCountry = get_country_mask()
+fractionCountry = get_country_mask(country=183)
 
 # Get grid areas for area weighted mean
 grid_area, tot_area = get_grid_area(fractionCountry)
@@ -154,7 +174,6 @@ def line():
         pwm_data = np.zeros(len(years))
 
         for j, year in enumerate(years):
-
             models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
             all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop)
 
@@ -178,8 +197,7 @@ def line():
     # plt.savefig("D:/CMIP6_Images/PM2.5/us.png")
 
 
-def map_plot(year, ssp, longitude, latitude, all_conc, fig, ax, cmap, norm, vmin=0, vmax=100, country="the World", **kwargs):
-
+def map_plot(year, ssp, longitude, latitude, all_conc, fig, ax, cmap, norm, vmin=0, vmax=100, **kwargs):
     ax.coastlines(resolution='10m')
     if "extent" in kwargs:
         ax.set_extent(kwargs["extent"], ccrs.PlateCarree())
@@ -193,7 +211,7 @@ def map_plot(year, ssp, longitude, latitude, all_conc, fig, ax, cmap, norm, vmin
     #     color = cmap(norm_conc[k])
     #     ax.add_geometries([shape], ccrs.PlateCarree(), facecolor=color)
 
-    im = ax.pcolormesh(longitude, latitude, all_conc, vmin=vmin, vmax=vmax, cmap=cmap)
+    im = ax.pcolormesh(longitude, latitude, all_conc, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm)
     # fig.colorbar(im, ax=ax)
     # fig.colorbar(matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
 
@@ -213,7 +231,7 @@ def map():
         colors[i] = color
     cmap = ListedColormap(colors)
 
-    bounds = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 20, 40, 60, 80]
+    bounds = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8]
     cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
 
     vmin = 0
@@ -237,31 +255,31 @@ def map():
             ax_i = j // 3
             ax_j = j % 3
 
-            map_plot(year, ssp, longitude, latitude, all_conc, vmin=vmin, vmax=vmax, fig=fig, ax=axes[ax_i, ax_j], cmap=cmap, norm=norm)
+            map_plot(year, ssp, longitude, latitude, all_conc, vmin=vmin, vmax=vmax, fig=fig, ax=axes[ax_i, ax_j],
+                     cmap=cmap, norm=norm, extent=[-180, -60, 15, 70])
 
             print(f"{ssp} {year} inter-model PWM: {np.round(all_pwm, 2)}, AWM: {np.round(all_awm, 2)}")
 
-        output_dir=f"D:/CMIP6_Images/PM2.5/map"
+        output_dir = f"D:/CMIP6_Images/PM2.5/map"
         os.makedirs(output_dir, exist_ok=True)
         fig.tight_layout()
         cbar = fig.colorbar(
             matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
             ax=axes.ravel().tolist(),
-            ticks=[0, 5, 10, 20, 40, 60, 80],
+            ticks=bounds,
             spacing="proportional",
             shrink=0.9
         )
         cbar.set_label("Concentration (μg / m^3)")
         # plt.show()
-        plt.savefig(f"{output_dir}/global_{ssp}.png")
+        plt.savefig(f"{output_dir}/us_{ssp}.png")
         plt.close(fig)
 
 
-
-
 def main():
+    get_country_mask(output=True)
     # line()
-    map()
+    # map()
 
 
 if __name__ == "__main__":
