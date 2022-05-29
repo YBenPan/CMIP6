@@ -96,33 +96,33 @@ def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_fi
     fractionCountry[fractionCountry < 0.0] = 0.0
     fractionCountry[fractionCountry > 1.0] = 0.0
 
-    # # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
-    # fractionCountry = np.concatenate(
-    #     [
-    #         fractionCountry[:, :, len(longitude) // 2:],
-    #         fractionCountry[:, :, : len(longitude) // 2],
-    #     ],
-    #     axis=2,
-    # )
-
-    us_fraction = fractionCountry[country]
-
-    output_path = "D:/CMIP6_data/population/national_pop"
-    output_file = f"{output_path}/us_mask.nc"
-    ds = Dataset(output_file, "w", format="NETCDF4")
-    ds.createDimension("latitude", len(latitude))
-    ds.createDimension("longitude", len(longitude))
-    lats = ds.createVariable("latitude", "f4", ("latitude",))
-    lons = ds.createVariable("longitude", "f4", ("longitude",))
-    fractions = ds.createVariable("us_fraction", "f4", ("latitude", "longitude"))
-    lats[:] = latitude
-    lons[:] = longitude
-    fractions[:, :] = us_fraction
-    lats.units = "degrees_north"
-    lons.units = "degress_east"
-    ds.description = "Country mask for the United States on a grid with resolution 0.5 deg x0.5 deg"
-    ds.contact = "Yuhao (Ben) Pan - ybenp8104@gmail.com"
-    ds.close()
+    if not output:
+        # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
+        fractionCountry = np.concatenate(
+            [
+                fractionCountry[:, :, len(longitude) // 2:],
+                fractionCountry[:, :, : len(longitude) // 2],
+            ],
+            axis=2,
+        )
+    else:
+        us_fraction = fractionCountry[country]
+        output_path = "D:/CMIP6_data/population/national_pop"
+        output_file = f"{output_path}/us_mask.nc"
+        ds = Dataset(output_file, "w", format="NETCDF4")
+        ds.createDimension("latitude", len(latitude))
+        ds.createDimension("longitude", len(longitude))
+        lats = ds.createVariable("latitude", "f4", ("latitude",))
+        lons = ds.createVariable("longitude", "f4", ("longitude",))
+        fractions = ds.createVariable("us_fraction", "f4", ("latitude", "longitude"))
+        lats[:] = latitude
+        lons[:] = longitude
+        fractions[:, :] = us_fraction
+        lats.units = "degrees_north"
+        lons.units = "degress_east"
+        ds.description = "Country mask for the United States on a grid with resolution 0.5 deg x0.5 deg"
+        ds.contact = "Yuhao (Ben) Pan - ybenp8104@gmail.com"
+        ds.close()
 
     return fractionCountry[country]
 
@@ -220,22 +220,22 @@ def map_plot(year, ssp, longitude, latitude, all_conc, fig, ax, cmap, norm, vmin
 
 def map():
     # Set colors
-    colors = [(228, 245, 253), (204, 236, 249), (178, 225, 251), (149, 212, 243), (127, 191, 227), (103, 174, 220),
-              (85, 151, 211), (69, 148, 185), (72, 158, 145), (71, 168, 114), (69, 181, 83), (114, 196, 72),
-              (163, 208, 83), (208, 219, 91),
-              (251, 230, 89), (248, 196, 76), (246, 162, 64), (244, 131, 53), (241, 98, 40), (238, 76, 38),
-              (228, 56, 40), (220, 37, 41),
-              (200, 29, 37), (180, 27, 32), (165, 24, 30)]
-    for i, color in enumerate(colors):
-        color = tuple(x / 256 for x in color)
-        colors[i] = color
-    cmap = ListedColormap(colors)
+    # colors = [(228, 245, 253), (204, 236, 249), (178, 225, 251), (149, 212, 243), (127, 191, 227), (103, 174, 220),
+    #           (85, 151, 211), (69, 148, 185), (72, 158, 145), (71, 168, 114), (69, 181, 83), (114, 196, 72),
+    #           (163, 208, 83), (208, 219, 91),
+    #           (251, 230, 89), (248, 196, 76), (246, 162, 64), (244, 131, 53), (241, 98, 40), (238, 76, 38),
+    #           (228, 56, 40), (220, 37, 41),
+    #           (200, 29, 37), (180, 27, 32), (165, 24, 30)]
+    # for i, color in enumerate(colors):
+    #     color = tuple(x / 256 for x in color)
+    #     colors[i] = color
+    # cmap = ListedColormap(colors)
 
     bounds = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8]
     cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
 
     vmin = 0
-    vmax = 80
+    vmax = 8
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
     pm25_path = "D:/CMIP6_data/PM2.5_annual"
@@ -277,9 +277,9 @@ def map():
 
 
 def main():
-    get_country_mask(output=True)
+    # get_country_mask(output=True)
     # line()
-    # map()
+    map()
 
 
 if __name__ == "__main__":
