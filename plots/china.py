@@ -11,9 +11,15 @@ from map import findColor
 from PM25_plots import mean, get_country_mask, get_grid_area, get_pop, map_plot
 import math
 
+####################################################################################################
+#### CREATE PLOTS OF CHINA FOR COMPARISON TO TANG ET AL, BOTH PM AND MORTALITY
+####################################################################################################
+
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+#### pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
 pm25_path = "D:/CMIP6_data/PM2.5_annual"
+#### country_fraction_path = "/home/ybenp/CMIP6_data/population/national_pop"
 country_fraction_path = "D:/CMIP6_data/population/national_pop"
 country_fraction_file = f"{country_fraction_path}/countryFractions_2010_0.5x0.5.nc"
 
@@ -30,6 +36,7 @@ grid_area, tot_area = get_grid_area(fractionCountry)
 pop, tot_pop = get_pop(fractionCountry)
 
 # Import China fraction
+#### china_fraction_file = "/home/ybenp/CMIP6_data/fraction/china_state_fraction_0.5x0.5.nc"
 china_fraction_file = "D:/CMIP6_data/fraction/china_state_fraction_0.5x0.5.nc"
 f1 = Dataset(china_fraction_file, "r")
 fractionState = f1.variables["fractionState"][
@@ -91,6 +98,7 @@ def pm25_mean():
 
 
 def mortality():
+    #### mort_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health/Baseline_Ben_2015_National/5_years"
     mort_dir = "D:/CMIP6_data/Outputs/Baseline_Ben_2015_National/5_years"
     cmap = matplotlib.colors.ListedColormap([
         "antiquewhite", "moccasin", "pink", "palevioletred", "indianred", "brown", "maroon"
@@ -127,6 +135,7 @@ def mortality():
             ax.set_title(f"{ssp}_{year}")
 
             # Import China level 1 shapefile
+            #### shp_file = "/home/ybenp/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
             shp_file = "D:/CMIP6_data/country_shapefiles/gadm40_CHN_shp/gadm40_CHN_1.shp"
             china_shapes = list(shpreader.Reader(shp_file).geometries())
 
@@ -140,6 +149,7 @@ def mortality():
         shrink=0.6, ticks=colorbounds, spacing="uniform", format="%d")
     cbar.ax.set_ylabel("PM2.5-related mortality (thousand)")
 
+    #### output_dir = f"/home/ybenp/CMIP6_Images/Mortality/China/Baseline_Ben_2015_National/5_years/"
     output_dir = f"D:/CMIP6_Images/Mortality/China/Baseline_Ben_2015_National/5_years/{ssp}/Pop_{pop_ssp}_var/"
     os.makedirs(output_dir, exist_ok=True)
     output_file = f"{output_dir}/deaths_excluded.png"
