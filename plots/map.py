@@ -162,8 +162,8 @@ def findColor(colorbounds, colormap, num):
         if num >= colorbounds[x]:
             continue
         else:
-            return colormap.colors[x - 1]
-    return colormap.colors[len(colorbounds) - 2]
+            return colormap(x - 1)
+    return colormap(len(colorbounds) - 2)
 
 
 def output_diff(data, diff_file, ssp, models):
@@ -180,13 +180,10 @@ def output_diff(data, diff_file, ssp, models):
 
 
 def ssp_pop_2040_mort():
-    cmap = matplotlib.colors.ListedColormap([
-        'darkblue', 'deepskyblue',
-        'azure', 'wheat', 'gold', 'orange',
-        'red', 'darkred'
-    ])
-    colorbounds = [-10000, -5000, 0, 5000, 10000, 15000, 20000, 50000, 100000]
-    assert len(colorbounds) == cmap.N + 1
+
+    bounds = [-10000, -5000, -4000, -3000, -2000, -1000, 0, 5000, 10000, 15000, 20000, 50000, 100000]
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
     # Define settings
     year_bins = [
         "2015",
@@ -268,13 +265,17 @@ def ssp_pop_2040_mort():
                         cur_index = country_names.index(cur_name)
                         if np.isnan(diff[cur_index, age_bin_ind]):
                             continue
-                        color = findColor(colorbounds, cmap, diff[cur_index, age_bin_ind])
+                        color = findColor(bounds, cmap, diff[cur_index, age_bin_ind])
                         ax.add_geometries([country.geometry], ccrs.PlateCarree(), facecolor=color)
 
-                norm = matplotlib.colors.BoundaryNorm(colorbounds, cmap.N)
                 cbar = fig.colorbar(
-                    matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm), ax=ax,
-                    shrink=0.6, ticks=colorbounds, spacing="uniform", format="%d")
+                    matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
+                    ax=ax,
+                    shrink=0.6,
+                    ticks=bounds,
+                    spacing="uniform",
+                    format="%d"
+                )
                 cbar.ax.set_ylabel("Change in Mortality")
                 plt.title(f"Change in Mortality caused by {disease}_{var_name} in scenario {ssp}, age cohort {age_bin} from 2015 to 2040")
 
