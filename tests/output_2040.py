@@ -49,8 +49,8 @@ for ssp in ssps:
             rate = data / pop
             if not all(i <= j for i, j in zip(rate, rate[1:])):
                 print(f"Error in {ssp}, {disease}")
-                for i, j in zip(age_groups, rate):
-                    print(i, j)
+                for i, j, k in zip(age_groups, data, pop):
+                    print(i, j, k)
             else:
                 print(f"Done: {ssp}, {disease} is OK.")
 
