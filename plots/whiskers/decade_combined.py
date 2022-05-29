@@ -7,6 +7,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+####################################################################################################
+#### CREATE WHISKER PLOT OF US, INDIA, CHINA, WORLD in 2010s, 2050s, 2090s COMBINED
+####################################################################################################
+
 # parentdir = "/glade/scratch/lamar/Data/PM2.5/Baseline_2015_Population_2015/"
 parentdir = "D:/CMIP6_data/Mortality/"
 output_dir = "D:/CMIP6_Images/Mortality/whisker_all_time/"
