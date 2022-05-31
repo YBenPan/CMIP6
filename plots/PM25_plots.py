@@ -96,35 +96,35 @@ def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_fi
     fractionCountry[fractionCountry < 0.0] = 0.0
     fractionCountry[fractionCountry > 1.0] = 0.0
 
+    fractionCountry = np.concatenate(
+        [
+            fractionCountry[:, :, len(longitude) // 2:],
+            fractionCountry[:, :, : len(longitude) // 2],
+        ],
+        axis=2,
+    )
+    longitude = np.arange(0.25, 360, 0.5)
+    us_fraction = fractionCountry[country]
     if not output:
-        # Change Longitude from -180 to 180 to 0 to 360 for ease of computation
-        fractionCountry = np.concatenate(
-            [
-                fractionCountry[:, :, len(longitude) // 2:],
-                fractionCountry[:, :, : len(longitude) // 2],
-            ],
-            axis=2,
-        )
-    else:
-        us_fraction = fractionCountry[country]
-        output_path = "D:/CMIP6_data/population/national_pop"
-        output_file = f"{output_path}/us_mask.nc"
-        ds = Dataset(output_file, "w", format="NETCDF4")
-        ds.createDimension("latitude", len(latitude))
-        ds.createDimension("longitude", len(longitude))
-        lats = ds.createVariable("latitude", "f4", ("latitude",))
-        lons = ds.createVariable("longitude", "f4", ("longitude",))
-        fractions = ds.createVariable("us_fraction", "f4", ("latitude", "longitude"))
-        lats[:] = latitude
-        lons[:] = longitude
-        fractions[:, :] = us_fraction
-        lats.units = "degrees_north"
-        lons.units = "degress_east"
-        ds.description = "Country mask for the United States on a grid with resolution 0.5 deg x0.5 deg"
-        ds.contact = "Yuhao (Ben) Pan - ybenp8104@gmail.com"
-        ds.close()
+        return us_fraction
+    output_path = "D:/CMIP6_data/population/national_pop"
+    output_file = f"{output_path}/us_mask.nc"
+    ds = Dataset(output_file, "w", format="NETCDF4")
+    ds.createDimension("lat", len(latitude))
+    ds.createDimension("lon", len(longitude))
+    lats = ds.createVariable("lat", "f4", ("lat",))
+    lons = ds.createVariable("lon", "f4", ("lon",))
+    fractions = ds.createVariable("us_fraction", "f4", ("lat", "lon"))
+    lats[:] = latitude
+    lons[:] = longitude
+    fractions[:, :] = us_fraction
+    lats.units = "degrees_north"
+    lons.units = "degress_east"
+    ds.description = "Country mask for the United States on a grid with resolution 0.5 deg x0.5 deg"
+    ds.contact = "Yuhao (Ben) Pan - ybenp8104@gmail.com"
+    ds.close()
 
-    return fractionCountry[country]
+    return us_fraction
 
 
 def get_grid_area(fractionCountry=np.ones((360, 720))):
@@ -277,9 +277,9 @@ def map():
 
 
 def main():
-    # get_country_mask(output=True)
+    get_country_mask(country=183, output=True)
     # line()
-    map()
+    # map()
 
 
 if __name__ == "__main__":
