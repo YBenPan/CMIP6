@@ -11,8 +11,9 @@ import seaborn as sns
 
 #### parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 parent_dir = "D:/CMIP6_data/Outputs"
-#### output_dir = "/home/ybenp/CMIP6_Images/Mortality/whiskers/global_mort"
-output_dir = "D:/CMIP6_Images/Mortality/whiskers/global_mort"
+#### output_dir = "/home/ybenp/CMIP6_Images/Mortality/global_mort"
+output_dir = "D:/CMIP6_Images/Mortality/global_mort"
+os.makedirs(output_dir, exist_ok=True)
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 years = [2015, 2030, 2040]
@@ -48,6 +49,7 @@ def diseases_stacked(pop_baselines, var_name="mean"):
     data = np.zeros((len(years), len(ssps), len(pop_baselines), len(diseases)))
     df = pd.DataFrame(columns=["Year", "SSP", "Pop_Baseline", "Disease", "Mean"])
     models = get_models(ssps)
+    xlabels = []
     for i, year in enumerate(years):
 
         for j, ssp in enumerate(ssps):
@@ -78,10 +80,16 @@ def diseases_stacked(pop_baselines, var_name="mean"):
                     df = df.append({"Year": year, "SSP": ssp, "Pop_Baseline": pop_baseline, "Disease": disease, "Mean": disease_mean},
                                    ignore_index=True)
                     # print(f"{year}, {ssp}, {pop_baseline}, {disease} mean: {all_mean}")
+                xlabels.append(f"{year}, {ssp}")
 
     df = df.groupby(["Year", "SSP", "Pop_Baseline", "Disease"]).sum().unstack("Disease")
     fig, ax = plt.subplots(figsize=(10, 10))
     df.plot.bar(ax=ax, stacked=True)
+    ax.set_xticks(ticks=np.arange(0, 12), labels=xlabels)
+    ax.set_ylabel("Global Mortality")
+
+    output_file = f"{output_dir}/stacked.png"
+    # plt.savefig(output_file)
     plt.show()
 
 
