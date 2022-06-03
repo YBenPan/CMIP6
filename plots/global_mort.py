@@ -16,7 +16,7 @@ output_dir = "D:/CMIP6_Images/Mortality/whiskers/global_mort"
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 years = [2015, 2030, 2040]
-diseases = ["Allcause"]
+diseases = ["Allcause", "IHD"]
 
 pop_ssp_dict = {
     "ssp119": "ssp1",
@@ -46,6 +46,7 @@ def get_models(ssps):
 
 def diseases_stacked(pop_baselines, var_name="mean"):
     data = np.zeros((len(years), len(ssps), len(pop_baselines), len(diseases)))
+    df = pd.DataFrame(columns=["Year", "SSP", "Pop_Baseline", "Disease", "Mean"])
     models = get_models(ssps)
     for i, year in enumerate(years):
 
@@ -54,10 +55,11 @@ def diseases_stacked(pop_baselines, var_name="mean"):
 
             for k, pop_baseline in enumerate(pop_baselines):
                 pop, baseline = pop_baseline
+                all_values = []
 
                 for p, disease in enumerate(diseases):
 
-                    all_values = []
+                    disease_values = []
 
                     for q, model in enumerate(models[j]):
                         search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
@@ -69,10 +71,18 @@ def diseases_stacked(pop_baselines, var_name="mean"):
                             model_values.append(wk.iloc[-1].values[-1])
 
                         model_mean = np.mean(model_values)
-                        all_values.append(model_mean)
-                    all_mean = np.mean(all_values)
-                    data[i, j, k, p] = all_mean
-                    print(f"{year}, {ssp}, {pop_baseline}, {disease} mean: {all_mean}")
+                        disease_values.append(model_mean)
+                    disease_mean = np.mean(disease_values)
+                    all_values.append(disease_mean)
+                    # data[i, j, k, p] = all_mean
+                    df = df.append({"Year": year, "SSP": ssp, "Pop_Baseline": pop_baseline, "Disease": disease, "Mean": disease_mean},
+                                   ignore_index=True)
+                    # print(f"{year}, {ssp}, {pop_baseline}, {disease} mean: {all_mean}")
+
+    df = df.groupby(["Year", "SSP", "Pop_Baseline", "Disease"]).sum().unstack("Disease")
+    fig, ax = plt.subplots(figsize=(10, 10))
+    df.plot.bar(ax=ax, stacked=True)
+    plt.show()
 
 
 def main():
