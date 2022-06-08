@@ -70,23 +70,30 @@ def main():
     print("Method 3: Using decomposition formula")
 
     for ssp in ssps:
-        delta = mort("var", "2040", "2040", ssp) - mort("2010", "2015", "2040", ssp)
+        ref = mort("2010", "2015", "2015", ssp)
+        delta = mort("var", "2040", "2040", ssp) - mort("2010", "2015", "2015", ssp)
 
-        # JF Method 1: (2010, 2015) -> (2010, 2040) -> (var, 2040)
+        # JF Method 1: (Pop 2010, Base 2015, Year 2015) ->
+        #              (Pop 2010, Base 2015, Year 2040) ->
+        #              (Pop 2010, Base 2040, Year 2040) ->
+        #              (Pop var, Base 2040, Year 2040)
+        pm_contribution = (mort("2010", "2015", "2040", ssp) - mort("2010", "2015", "2015", ssp))
         baseline_contribution = (mort("2010", "2040", "2040", ssp) - mort("2010", "2015", "2040", ssp))
         pop_contribution = (mort("var", "2040", "2040", ssp) - mort("2010", "2040", "2040", ssp))
-        print(f"{ssp}: Population Contribution 1: {np.round(pop_contribution / delta * 100)}, Baseline Contribution 1: {np.round(baseline_contribution / delta * 100)}")
+        print(f"{ssp}: PM Contribution: {int(pm_contribution / ref * 100)}%; Population Contribution: {int(pop_contribution / ref * 100)}%; Baseline Contribution: {int(baseline_contribution / ref * 100)}%")
+        print(f"{ssp}: Overall Change: {int(delta / ref * 100)}%")
+
 
         # JF Method 2: (2010, 2015) -> (var, 2015) -> (var, 2040)
-        baseline_contribution = (mort("var", "2015", "2040", ssp) - mort("2010", "2015", "2040", ssp))
-        pop_contribution = (mort("var", "2040", "2040", ssp) - mort("var", "2015", "2040", ssp))
-        print(
-            f"{ssp}: Population Contribution 2: {np.round(pop_contribution / delta * 100)}, Baseline Contribution 2: {np.round(baseline_contribution / delta * 100)}")
+        # baseline_contribution = (mort("var", "2015", "2040", ssp) - mort("2010", "2015", "2040", ssp))
+        # pop_contribution = (mort("var", "2040", "2040", ssp) - mort("var", "2015", "2040", ssp))
+        # print(
+        #     f"{ssp}: Population Contribution 2: {np.round(pop_contribution / delta * 100)}, Baseline Contribution 2: {np.round(baseline_contribution / delta * 100)}")
 
         # My Method
-        alpha_effect = (mort(a, b, "2040", ssp) - mort(A, b, "2040", ssp) + mort(a, B, "2040", ssp) - mort(A, B, "2040", ssp)) / 2
-        beta_effect = (mort(a, b, "2040", ssp) - mort(a, B, "2040", ssp) + mort(A, b, "2040", ssp) - mort(A, B, "2040", ssp)) / 2
-        print(f"{ssp}: Alpha Effect: {np.round(alpha_effect / delta * 100)}, Beta Effect: {np.round(beta_effect / delta * 100)}")
+        # alpha_effect = (mort(a, b, "2040", ssp) - mort(A, b, "2040", ssp) + mort(a, B, "2040", ssp) - mort(A, B, "2040", ssp)) / 2
+        # beta_effect = (mort(a, b, "2040", ssp) - mort(a, B, "2040", ssp) + mort(A, b, "2040", ssp) - mort(A, B, "2040", ssp)) / 2
+        # print(f"{ssp}: Alpha Effect: {np.round(alpha_effect / delta * 100)}, Beta Effect: {np.round(beta_effect / delta * 100)}")
 
         # print("Sum verification:")
         # print(f"Method 1: {np.round(pop_contribution + baseline_contribution)}; Method 2: {np.round(alpha_effect + beta_effect)}")
