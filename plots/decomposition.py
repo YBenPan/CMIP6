@@ -132,16 +132,17 @@ def main():
 
             df = pd.DataFrame(
                 {
+                    "Disease": diseases,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
                     "Population": pops,
                     "Overall": deltas
                 },
-                index=diseases
             )
-            wk_df = df[["PM2.5 Concentration", "Baseline Mortality", "Population"]]
+            wk_df = df[["Disease", "PM2.5 Concentration", "Baseline Mortality", "Population"]]
             wk_df = wk_df.sort_index(axis=1)
-            wk_df.plot(kind="bar", stacked=True, ax=ax, color=["gold", "cornflowerblue", "lightgreen"])
+            wk_df.plot(x="Disease", kind="bar", stacked=True, ax=ax, color=["gold", "cornflowerblue", "lightgreen"])
+            sns.scatterplot(x="Disease", y="Overall", data=df, ax=ax)
 
             ax.set_title(country_long_name)
             if k == 0:  # First column
