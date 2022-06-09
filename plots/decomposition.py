@@ -141,7 +141,7 @@ def main():
             )
             wk_df = df[["PM2.5 Concentration", "Baseline Mortality", "Population"]]
             wk_df = wk_df.sort_index(axis=1)
-            wk_df.plot(kind="bar", stacked=True, ax=ax)
+            wk_df.plot(kind="bar", stacked=True, ax=ax, color=["gold", "cornflowerblue", "lightgreen"])
 
             ax.set_title(country_long_name)
             if k == 0:  # First column
