@@ -2,6 +2,8 @@ import os
 from glob import glob
 import numpy as np
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 ####################################################################################################
 #### CREATE DECOMPOSITION GRAPHS OF MORTALITY
@@ -11,6 +13,11 @@ import pandas as pd
 parent_dir = "D:/CMIP6_data/Outputs"
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+# diseases = ["LRI"]
+countries = [-1, 35, 77, 183, 85, 123]
+country_long_names = ["World", "China", "India", "The United States", "Japan", "Nigeria"]
+output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
 
 pop_ssp_dict = {
     "ssp119": "ssp1",
@@ -65,56 +72,91 @@ def main():
     b = "2040"
     # c = "2040"
 
-    print("Method 1: (2010, 2015) -> (2010, 2040) -> (var, 2040)")
-    print("Method 2: (2010, 2015) -> (var, 2015) -> (var, 2040)")
-    print("Method 3: Using decomposition formula")
+    sns.set()
 
     for ssp in ssps:
-        ref = mort("2010", "2015", "2015", ssp)
-        delta = mort("var", "2040", "2040", ssp) - mort("2010", "2015", "2015", ssp)
 
-        # JF Method 1: (Pop 2010, Base 2015, Year 2015) ->
-        #              (Pop 2010, Base 2015, Year 2040) ->
-        #              (Pop 2010, Base 2040, Year 2040) ->
-        #              (Pop var, Base 2040, Year 2040)
-        pm_contribution = (mort("2010", "2015", "2040", ssp) - mort("2010", "2015", "2015", ssp))
-        baseline_contribution = (mort("2010", "2040", "2040", ssp) - mort("2010", "2015", "2040", ssp))
-        pop_contribution = (mort("var", "2040", "2040", ssp) - mort("2010", "2040", "2040", ssp))
-        print(f"{ssp}: PM Contribution: {int(pm_contribution / ref * 100)}%; Population Contribution: {int(pop_contribution / ref * 100)}%; Baseline Contribution: {int(baseline_contribution / ref * 100)}%")
-        print(f"{ssp}: Overall Change: {int(delta / ref * 100)}%")
+        # Initialize plotting
+        fig, axes = plt.subplots(2, 3, figsize=(15, 12))
+        fig.suptitle("Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040")
+        # Plotting Settings
+        ymin = -100
+        ymax = 500
 
+        for i, (country, country_long_name) in enumerate(zip(countries, country_long_names)):
+            pms = []
+            baselines = []
+            pops = []
+            deltas = []
 
-        # JF Method 2: (2010, 2015) -> (var, 2015) -> (var, 2040)
-        # baseline_contribution = (mort("var", "2015", "2040", ssp) - mort("2010", "2015", "2040", ssp))
-        # pop_contribution = (mort("var", "2040", "2040", ssp) - mort("var", "2015", "2040", ssp))
-        # print(
-        #     f"{ssp}: Population Contribution 2: {np.round(pop_contribution / delta * 100)}, Baseline Contribution 2: {np.round(baseline_contribution / delta * 100)}")
+            # Select current ax:
+            j = i // 3
+            k = i % 3
+            ax = axes[j, k]
+            ax.set_ylim([ymin, ymax])
 
-        # My Method
-        # alpha_effect = (mort(a, b, "2040", ssp) - mort(A, b, "2040", ssp) + mort(a, B, "2040", ssp) - mort(A, B, "2040", ssp)) / 2
-        # beta_effect = (mort(a, b, "2040", ssp) - mort(a, B, "2040", ssp) + mort(A, b, "2040", ssp) - mort(A, B, "2040", ssp)) / 2
-        # print(f"{ssp}: Alpha Effect: {np.round(alpha_effect / delta * 100)}, Beta Effect: {np.round(beta_effect / delta * 100)}")
+            for disease in diseases:
+                ref = mort("2010", "2015", "2015", disease, ssp, country)
+                delta = mort("var", "2040", "2040", disease, ssp, country) - mort("2010", "2015", "2015", disease, ssp,
+                                                                                  country)
 
-        # print("Sum verification:")
-        # print(f"Method 1: {np.round(pop_contribution + baseline_contribution)}; Method 2: {np.round(alpha_effect + beta_effect)}")
+                # JF Method: (Pop 2010, Base 2015, Year 2015) ->
+                #            (Pop 2010, Base 2015, Year 2040) ->
+                #            (Pop 2010, Base 2040, Year 2040) ->
+                #            (Pop var, Base 2040, Year 2040)
+                pm_contribution = (
+                            mort("2010", "2015", "2040", disease, ssp, country) - mort("2010", "2015", "2015", disease,
+                                                                                       ssp, country))
+                baseline_contribution = (
+                            mort("2010", "2040", "2040", disease, ssp, country) - mort("2010", "2015", "2040", disease,
+                                                                                       ssp, country))
+                pop_contribution = (
+                            mort("var", "2040", "2040", disease, ssp, country) - mort("2010", "2040", "2040", disease,
+                                                                                      ssp, country))
 
-        # Obsolete Method
-        # alpha_effect = \
-        #     (mort(a, b, c, ssp) + mort(a, B, C, ssp)) / 3 + \
-        #     (mort(a, b, C, ssp) + mort(a, B, c, ssp)) / 6 - \
-        #     (mort(A, b, c, ssp) + mort(A, B, C, ssp)) / 3 - \
-        #     (mort(A, b, C, ssp) + mort(A, B, c, ssp)) / 6
-        # beta_effect = \
-        #     (mort(a, b, c, ssp) + mort(A, b, C, ssp)) / 3 + \
-        #     (mort(a, b, C, ssp) + mort(A, b, c, ssp)) / 6 - \
-        #     (mort(a, B, c, ssp) + mort(A, B, C, ssp)) / 3 - \
-        #     (mort(a, B, C, ssp) + mort(A, B, c, ssp)) / 6
-        # gamma_effect = \
-        #     (mort(a, b, c, ssp) + mort(A, B, c, ssp)) / 3 + \
-        #     (mort(a, B, c, ssp) + mort(A, b, c, ssp)) / 6 - \
-        #     (mort(a, b, C, ssp) + mort(A, B, C, ssp)) / 3 - \
-        #     (mort(a, B, C, ssp) + mort(A, b, C, ssp)) / 6
+                pm_percent = np.round(pm_contribution / ref * 100, 1)
+                baseline_percent = np.round(baseline_contribution / ref * 100, 1)
+                pop_percent = np.round(pop_contribution / ref * 100, 1)
+                delta_percent = np.round(delta / ref * 100, 1)
 
+                pms.append(pm_percent)
+                baselines.append(baseline_percent)
+                pops.append(pop_percent)
+                deltas.append(delta_percent)
+
+                print(
+                    f"{ssp}, {country_long_name}, {disease}: PM Contribution: {pm_percent}%; Population Contribution: {pop_percent}%; Baseline Contribution: {baseline_percent}%")
+                print(f"{ssp}, {country_long_name}, {disease}: Overall Change: {delta_percent}%")
+
+            # Visualize with a stacked bar plot
+
+            df = pd.DataFrame(
+                {
+                    "PM2.5 Concentration": pms,
+                    "Baseline Mortality": baselines,
+                    "Population": pops,
+                    "Overall": deltas
+                },
+                index=diseases
+            )
+            wk_df = df[["PM2.5 Concentration", "Baseline Mortality", "Population"]]
+            wk_df = wk_df.sort_index(axis=1)
+            wk_df.plot(kind="bar", stacked=True, ax=ax)
+
+            ax.set_title(country_long_name)
+            if k == 0:  # First column
+                ax.set_ylabel("Change in Percent")
+            if j == axes.shape[0] - 1:  # Last row
+                ax.set_xlabel("Diseases")
+
+        # Plot legend
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper right')
+        for ax in axes.flatten():
+            ax = ax.get_legend().remove()
+
+        output_file = f"{output_dir}/{ssp}.png"
+        plt.savefig(output_file)
 
 
 if __name__ == "__main__":
