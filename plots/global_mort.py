@@ -4,21 +4,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from decomposition import get_models, mort, init_by_factor
 
 ####################################################################################################
-#### CREATE WHISKER PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
+#### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
 ####################################################################################################
 
-#### parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
-parent_dir = "D:/CMIP6_data/Outputs"
-#### output_dir = "/home/ybenp/CMIP6_Images/Mortality/global_mort"
-output_dir = "D:/CMIP6_Images/Mortality/global_mort"
-os.makedirs(output_dir, exist_ok=True)
-# ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
-ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-years = [2015, 2030, 2040]
-diseases = ["Allcause", "IHD"]
-
+# General Settings
+parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
+output_dir = "/home/ybenp/CMIP6_Images/Mortality/global_mort"
 pop_ssp_dict = {
     "ssp119": "ssp1",
     "ssp126": "ssp1",
@@ -26,29 +20,18 @@ pop_ssp_dict = {
     "ssp370": "ssp3",
     "ssp434": "ssp2",
     "ssp460": "ssp2",
-    "ssp585": "ssp1"
+    "ssp585": "ssp1",
 }
 
-
-def get_models(ssps):
-    all_models = []
-    for i, ssp in enumerate(ssps):
-        files_2015 = sorted(
-            glob(
-                f"{parent_dir}/Baseline_Ben_2015_National/5_years/{ssp}/*/CountryMortalityAbsolute/Allcause_mean/*_2015_GEMM.csv"))
-        #### models = sorted(set([file.split("/")[-1].split("_")[2] for file in files_2015]))
-        models = sorted(set([file.split("\\")[-1].split("_")[2] for file in files_2015]))
-        # Add or remove models here
-        models = [model for model in models if "EC-Earth3-AerChem" not in model]
-        # models = [model for model in models if model in ["CESM2-WACCM6", "GFDL-ESM4", "GISS-E2-1-G", "MIROC-ES2L", "MIROC6", "MRI-ESM2-0", "NorESM2-LM"]]
-        all_models.append(models)
-    return all_models
+# Run Settings
+ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+years = [2015, 2030, 2040]
+diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+age_groups = ["25-60", "60-80", "80+"]
 
 
-def diseases_stacked(pop_baselines, var_name="mean"):
-    data = np.zeros((len(years), len(ssps), len(pop_baselines), len(diseases)))
-    df = pd.DataFrame(columns=["Year", "SSP", "Pop_Baseline", "Disease", "Mean"])
-    models = get_models(ssps)
+def diseases_stacked(factor_name, factors, pop_baselines, country=-1, country_long_name="World"):
+    df = pd.DataFrame(columns=["Year", "SSP", "Pop_Baseline", factor_name, "Mean"])
     xlabels = []
     for i, year in enumerate(years):
 
@@ -57,45 +40,46 @@ def diseases_stacked(pop_baselines, var_name="mean"):
 
             for k, pop_baseline in enumerate(pop_baselines):
                 pop, baseline = pop_baseline
-                all_values = []
 
-                for p, disease in enumerate(diseases):
+                for p, factor in enumerate(factors):
+                    ages, disease = init_by_factor(factor_name, factor)
 
-                    disease_values = []
-
-                    for q, model in enumerate(models[j]):
-                        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
-                        files = sorted(glob(search_str))
-                        model_values = []
-
-                        for file in files:
-                            wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
-                            model_values.append(wk.iloc[-1].values[-1])
-
-                        model_mean = np.mean(model_values)
-                        disease_values.append(model_mean)
-                    disease_mean = np.mean(disease_values)
-                    all_values.append(disease_mean)
-                    # data[i, j, k, p] = all_mean
-                    df = df.append({"Year": year, "SSP": ssp, "Pop_Baseline": pop_baseline, "Disease": disease, "Mean": disease_mean},
-                                   ignore_index=True)
-                    # print(f"{year}, {ssp}, {pop_baseline}, {disease} mean: {all_mean}")
+                    factor_mean = mort(
+                        pop=pop,
+                        baseline=baseline,
+                        year=year,
+                        ssp=ssp,
+                        ages=ages,
+                        disease=disease,
+                        country=country,
+                    )
+                    df = df.append(
+                        {
+                            "Year": year,
+                            "SSP": ssp,
+                            "Pop_Baseline": pop_baseline,
+                            factor_name: factor,
+                            "Mean": factor_mean,
+                        },
+                        ignore_index=True,
+                    )
+                    print(f"{year}, {ssp}, {pop_baseline}, {factor} mean: {factor_mean}")
                 xlabels.append(f"{year}, {ssp}")
 
-    df = df.groupby(["Year", "SSP", "Pop_Baseline", "Disease"]).sum().unstack("Disease")
+    df = df.groupby(["Year", "SSP", "Pop_Baseline", factor_name]).sum().unstack(factor_name)
     fig, ax = plt.subplots(figsize=(10, 10))
     df.plot.bar(ax=ax, stacked=True)
     ax.set_xticks(ticks=np.arange(0, 12), labels=xlabels)
     ax.set_ylabel("Global Mortality")
 
-    output_file = f"{output_dir}/stacked.png"
-    # plt.savefig(output_file)
-    plt.show()
+    output_file = f"{output_dir}/{country_long_name}_{factor_name}_{pop_baselines[0][0]}_{pop_baselines[0][1]}.png"
+    plt.savefig(output_file)
+    # plt.show()
 
 
 def main():
-    # diseases_stacked(pop_baseline=[("2010", "2015"), ("var", "2015"), ("var", "2040")])
-    diseases_stacked(pop_baselines=[("var", "2015")])
+    diseases_stacked(factor_name="Age", factors=age_groups, pop_baselines=[("var", "2015")], country=183, country_long_name="US")
+    # china_tmp()
 
 
 if __name__ == "__main__":
