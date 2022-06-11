@@ -12,7 +12,6 @@ import matplotlib.patches as mpatches
 
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
-#### parent_dir = "D:/CMIP6_data/Outputs"
 output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
 pop_ssp_dict = {
     "ssp119": "ssp1",
@@ -27,9 +26,6 @@ pop_ssp_dict = {
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
-# age_groups = ["age_25_29_Mean", "age_30_34_Mean", "age_35_39_Mean", "age_40_44_Mean", "age_45_49_Mean",
-#               "age_50_54_Mean", "age_55_59_Mean", "age_60_64_Mean", "age_65_69_Mean", "age_70_74_Mean",
-#               "age_75_79_Mean", "age_80_84_Mean", "age_85_89_Mean", "age_90_94_Mean", "post95_Mean", "all_age_Mean"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
 countries = [-1, 35, 77, 183, 85, 53]
 country_long_names = ["World", "China", "India", "The United States", "Japan", "Egypt"]
@@ -50,7 +46,6 @@ def get_models(ssp):
         )
     )
     models = sorted(set([file.split("/")[-1].split("_")[2] for file in files_2015]))
-    #### models = sorted(set([file.split("\\")[-1].split("_")[2] for file in files_2015]))
     # Add or remove models here
     models = [model for model in models if "EC-Earth3-AerChem" not in model]
     # models = [model for model in models if model in ["CESM2-WACCM6", "GFDL-ESM4", "GISS-E2-1-G", "MIROC-ES2L",
@@ -84,47 +79,52 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1):
     return factor_mean
 
 
+def init_by_factor(factor_name, factor):
+    if factor_name == "Age":
+        if factor == "25-60":
+            ages = [
+                "age_25_29_Mean",
+                "age_30_34_Mean",
+                "age_35_39_Mean",
+                "age_40_44_Mean",
+                "age_45_49_Mean",
+                "age_50_54_Mean",
+                "age_55_59_Mean",
+            ]
+        elif factor == "60-80":
+            ages = [
+                "age_60_64_Mean",
+                "age_65_69_Mean",
+                "age_70_74_Mean",
+                "age_75_79_Mean",
+            ]
+        elif factor == "80+":
+            ages = [
+                "age_80_84_Mean",
+                "age_85_89_Mean",
+                "age_90_94_Mean",
+                "post95_Mean",
+            ]
+        elif factor == "25+":
+            ages = ["all_age_Mean"]
+        else:
+            raise NameError(f"{factor} age group not found!")
+        disease = None
+    elif factor_name == "Disease":
+        ages = None
+        disease = factor
+    else:
+        raise NameError(f"{factor_name} factor not found!")
+    return ages, disease
+
+
 def compute(factor_name, factors, ssp, country, country_long_name):
     pms = []
     baselines = []
     pops = []
     deltas = []
     for factor in factors:
-        if factor_name == "Age":
-            if factor == "25-60":
-                ages = [
-                    "age_25_29_Mean",
-                    "age_30_34_Mean",
-                    "age_35_39_Mean",
-                    "age_40_44_Mean",
-                    "age_45_49_Mean",
-                    "age_50_54_Mean",
-                    "age_55_59_Mean",
-                ]
-            elif factor == "60-80":
-                ages = [
-                    "age_60_64_Mean",
-                    "age_65_69_Mean",
-                    "age_70_74_Mean",
-                    "age_75_79_Mean",
-                ]
-            elif factor == "80+":
-                ages = [
-                    "age_80_84_Mean",
-                    "age_85_89_Mean",
-                    "age_90_94_Mean",
-                    "post95_Mean",
-                ]
-            elif factor == "25+":
-                ages = ["all_age_Mean"]
-            else:
-                raise NameError(f"{factor} age group not found!")
-            disease = None
-        elif factor_name == "Disease":
-            ages = None
-            disease = factor
-        else:
-            raise NameError(f"{factor_name} factor not found!")
+        ages, disease = init_by_factor(factor_name, factor)
         ref = mort(
             pop="2010",
             baseline="2015",
