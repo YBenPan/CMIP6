@@ -49,6 +49,7 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
                     ages=ages,
                     disease=disease,
                     country=country,
+                    return_std=True,
                 )
                 df = df.append(
                     {
@@ -56,30 +57,29 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
                         "SSP": ssp,
                         factor_name: factor,
                         "Mean": factor_mean,
+                        "STD": std,
                     },
                     ignore_index=True,
                 )
                 print(f"{year}, {ssp}, {pop}, {baseline}, {factor} mean: {factor_mean}")
             xlabels.append(f"{year}, {ssp}")
 
-    # df = df.groupby(["Year", "SSP", factor_name]).sum().unstack(factor_name)
-
     sns.set()
-    fig, ax = plt.subplots(figsize=(10, 10))
     g = sns.catplot(kind="bar", data=df, col="Year", x="SSP", y="Mean", hue=factor_name)
     g.set_axis_labels("SSP", "Number of Deaths")
     g.set_xticklabels(["1", "2", "3", "5"])
     g.set_titles("{col_name}")
-    # g = df.plot.bar(ax=ax, stacked=True)
-
-    # ax.set_xticks(ticks=np.arange(0, 12), labels=xlabels)
-    # ax.set_xlabel("")
-    # ax.set_ylabel("Number of Deaths")
-    # ax.set_title("PM2.5-attributable Mortality in the United States")
-    #
-    # ax.legend(title="", bbox_to_anchor=(1.02, 1), labels=["25-60", "60-80", "80+"])
+    fig = g.fig
     fig.suptitle(country_long_name)
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
+
+    for i, year in enumerate(years):
+        ax=g.axes[0][i]
+        year_df = df[df["Year"] == year]
+        year_stds = year_df["STD"].values
+        x_coords = sorted([p.get_x() + 0.5 * p.get_width() for p in ax.patches])
+        y_coords = year_df["Mean"].values
+        ax.errorbar(x=x_coords, y=y_coords, yerr=year_stds, fmt="none", color="black")
 
     output_file = f"{output_dir}/{country_long_name}_{factor_name}_{pop}_{baseline}.png"
     plt.savefig(output_file)
@@ -87,7 +87,7 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
 
 
 def main():
-    diseases_stacked(factor_name="Age", factors=age_groups, pop="var", baseline="2015", country=183, country_long_name="US")
+    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=35, country_long_name="China")
     # china_tmp()
 
 
