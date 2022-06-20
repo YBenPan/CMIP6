@@ -64,7 +64,7 @@ def get_models(ssp):
     return models
 
 
-def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1):
+def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_std=False):
     """Get mortality value from projections given a set of conditions"""
     ages = ["all_age_Mean"] if ages is None else ages
     disease = "Allcause" if disease is None else disease
@@ -87,10 +87,14 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1):
     if len(factor_values) == 0:
         print("No models found", year, ssp, pop, baseline, disease)
     factor_mean = np.mean(factor_values)
+    if return_std:
+        std = np.std(factor_mean)
+        return factor_mean, std
     return factor_mean
 
 
 def init_by_factor(factor_name, factor):
+    """Initialize ages and diseases array based on the variable in question"""
     if factor_name == "Age":
         if factor == "25-60":
             ages = [
