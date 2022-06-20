@@ -30,55 +30,64 @@ diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+"]
 
 
-def diseases_stacked(factor_name, factors, pop_baselines, country=-1, country_long_name="World"):
-    df = pd.DataFrame(columns=["Year", "SSP", "Pop_Baseline", factor_name, "Mean"])
+def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_long_name="World"):
+    df = pd.DataFrame(columns=["Year", "SSP", factor_name, "Mean"])
     xlabels = []
     for i, year in enumerate(years):
 
         for j, ssp in enumerate(ssps):
             pop_ssp = pop_ssp_dict[ssp]
 
-            for k, pop_baseline in enumerate(pop_baselines):
-                pop, baseline = pop_baseline
+            for p, factor in enumerate(factors):
+                ages, disease = init_by_factor(factor_name, factor)
 
-                for p, factor in enumerate(factors):
-                    ages, disease = init_by_factor(factor_name, factor)
+                factor_mean, std = mort(
+                    pop=pop,
+                    baseline=baseline,
+                    year=year,
+                    ssp=ssp,
+                    ages=ages,
+                    disease=disease,
+                    country=country,
+                )
+                df = df.append(
+                    {
+                        "Year": year,
+                        "SSP": ssp,
+                        factor_name: factor,
+                        "Mean": factor_mean,
+                    },
+                    ignore_index=True,
+                )
+                print(f"{year}, {ssp}, {pop}, {baseline}, {factor} mean: {factor_mean}")
+            xlabels.append(f"{year}, {ssp}")
 
-                    factor_mean = mort(
-                        pop=pop,
-                        baseline=baseline,
-                        year=year,
-                        ssp=ssp,
-                        ages=ages,
-                        disease=disease,
-                        country=country,
-                    )
-                    df = df.append(
-                        {
-                            "Year": year,
-                            "SSP": ssp,
-                            "Pop_Baseline": pop_baseline,
-                            factor_name: factor,
-                            "Mean": factor_mean,
-                        },
-                        ignore_index=True,
-                    )
-                    print(f"{year}, {ssp}, {pop_baseline}, {factor} mean: {factor_mean}")
-                xlabels.append(f"{year}, {ssp}")
+    # df = df.groupby(["Year", "SSP", factor_name]).sum().unstack(factor_name)
 
-    df = df.groupby(["Year", "SSP", "Pop_Baseline", factor_name]).sum().unstack(factor_name)
+    sns.set()
     fig, ax = plt.subplots(figsize=(10, 10))
-    df.plot.bar(ax=ax, stacked=True)
-    ax.set_xticks(ticks=np.arange(0, 12), labels=xlabels)
-    ax.set_ylabel("Global Mortality")
+    g = sns.catplot(kind="bar", data=df, col="Year", x="SSP", y="Mean", hue=factor_name)
+    g.set_axis_labels("SSP", "Number of Deaths")
+    g.set_xticklabels(["1", "2", "3", "5"])
+    g.set_titles("{col_name}")
+    # g = df.plot.bar(ax=ax, stacked=True)
 
-    output_file = f"{output_dir}/{country_long_name}_{factor_name}_{pop_baselines[0][0]}_{pop_baselines[0][1]}.png"
+    # ax.set_xticks(ticks=np.arange(0, 12), labels=xlabels)
+    # ax.set_xlabel("")
+    # ax.set_ylabel("Number of Deaths")
+    # ax.set_title("PM2.5-attributable Mortality in the United States")
+    #
+    # ax.legend(title="", bbox_to_anchor=(1.02, 1), labels=["25-60", "60-80", "80+"])
+    fig.suptitle(country_long_name)
+    fig.tight_layout()
+
+    output_file = f"{output_dir}/{country_long_name}_{factor_name}_{pop}_{baseline}.png"
     plt.savefig(output_file)
     # plt.show()
 
 
 def main():
-    diseases_stacked(factor_name="Age", factors=age_groups, pop_baselines=[("var", "2015")], country=183, country_long_name="US")
+    diseases_stacked(factor_name="Age", factors=age_groups, pop="var", baseline="2015", country=183, country_long_name="US")
     # china_tmp()
 
 
