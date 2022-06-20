@@ -12,6 +12,7 @@ import matplotlib.patches as mpatches
 
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
+home_dir = "/home/ybenp"
 output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
 pop_ssp_dict = {
     "ssp119": "ssp1",
@@ -23,13 +24,23 @@ pop_ssp_dict = {
     "ssp585": "ssp1",
 }
 
+
+def get_country_names():
+    countries_file = os.path.join(home_dir, "CMIP6_data", "population", "national_pop", "countryvalue_blank.csv")
+    countries_df = pd.read_csv(countries_file, usecols=["COUNTRY"])
+    country_long_names = countries_df["COUNTRY"].values
+    return country_long_names
+
+
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
-countries = [-1, 35, 77, 183, 85, 53]
-country_long_names = ["World", "China", "India", "The United States", "Japan", "Egypt"]
-factor_name = "Age"
+# countries = [-1, 35, 77, 183, 85, 53]
+# country_long_names = ["World", "China", "India", "The United States", "Japan", "Egypt"]
+countries = [*np.arange(0, 193), -1]
+country_long_names = [*get_country_names(), "World"]
+factor_name = "Disease"
 if factor_name == "Disease":
     factors = diseases
 elif factor_name == "Age":
@@ -226,7 +237,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
     return pms, baselines, pops, deltas
 
 
-def main():
+def decompose():
     A = "2010"
     B = "2015"
     # C = "2015"
@@ -241,11 +252,13 @@ def main():
         # Initialize plotting
         fig, axes = plt.subplots(2, 3, figsize=(16, 12))
         fig.suptitle(
-            "Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040"
+            f"Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040 in {ssp}"
         )
         # Plotting Settings
         ymin = -100
         ymax = 400
+
+        overall_df = pd.DataFrame()
 
         for i, (country, country_long_name) in enumerate(
             zip(countries, country_long_names)
@@ -254,8 +267,6 @@ def main():
             # Select current ax:
             j = i // 3
             k = i % 3
-            ax = axes[j, k]
-            ax.set_ylim([ymin, ymax])
 
             # Compute contributions
             pms, baselines, pops, deltas = compute(
@@ -269,6 +280,7 @@ def main():
 
             df = pd.DataFrame(
                 {
+                    "Country": country_long_name,
                     factor_name: factors,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
@@ -276,36 +288,46 @@ def main():
                     "Overall": deltas,
                 },
             )
-            wk_df = df[
-                [factor_name, "PM2.5 Concentration", "Baseline Mortality", "Population"]
-            ]
-            wk_df = wk_df.sort_index(axis=1)
-            wk_df.plot(
-                x=factor_name,
-                kind="bar",
-                stacked=True,
-                ax=ax,
-                color=["gold", "cornflowerblue", "lightgreen"],
-            )
-            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax)
+            overall_df = overall_df.append(df)
+            # wk_df = df[
+            #     [factor_name, "PM2.5 Concentration", "Baseline Mortality", "Population"]
+            # ]
+            # wk_df = wk_df.sort_index(axis=1)
+            # wk_df.plot(
+            #     x=factor_name,
+            #     kind="bar",
+            #     stacked=True,
+            #     ax=ax,
+            #     color=["gold", "cornflowerblue", "lightgreen"],
+            # )
+            # sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax)
+            #
+            # ax = axes[j, k]
+            # ax.set_ylim([ymin, ymax])
+            # ax.set_title(country_long_name)
+            # if k == 0:  # First column
+            #     ax.set_ylabel("Change in Percent")
+            # else:
+            #     ax.set_ylabel("")
+            # if j == axes.shape[0] - 1:  # Last row
+            #     ax.set_xlabel(factor_name)
+            # else:
+            #     ax.set_xlabel("")
+        # # Plot legend
+        # handles, labels = axes[0, 0].get_legend_handles_labels()
+        # fig.legend(handles, labels, loc="upper right")
+        # for ax in axes.flatten():
+        #     ax = ax.get_legend().remove()
 
-            ax.set_title(country_long_name)
-            if k == 0:  # First column
-                ax.set_ylabel("Change in Percent")
-            else:
-                ax.set_ylabel("")
-            if j == axes.shape[0] - 1:  # Last row
-                ax.set_xlabel(factor_name)
-            else:
-                ax.set_xlabel("")
-        # Plot legend
-        handles, labels = axes[0, 0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc="upper right")
-        for ax in axes.flatten():
-            ax = ax.get_legend().remove()
+        # output_file = f"{output_dir}/{factor_name}_{ssp}.png"
+        # plt.savefig(output_file)
+        output_file = os.path.join(output_dir, f"{factor_name}_{ssp}.csv")
+        overall_df = overall_df.reset_index(drop=True)
+        overall_df.to_csv(output_file, index=False)
 
-        output_file = f"{output_dir}/{factor_name}_{ssp}.png"
-        plt.savefig(output_file)
+
+def main():
+    decompose()
 
 
 if __name__ == "__main__":
