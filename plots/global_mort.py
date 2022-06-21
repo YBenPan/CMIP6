@@ -25,7 +25,7 @@ pop_ssp_dict = {
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-years = [2015, 2030, 2040]
+years = [2015, 2020, 2025, 2030, 2035, 2040]
 diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+"]
 
@@ -75,12 +75,18 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
 
     # Add error bars
     for i, year in enumerate(years):
-        ax=g.axes[0][i]
+        ax = g.axes[0][i]
         year_df = df[df["Year"] == year]
         year_stds = year_df["STD"].values
         x_coords = sorted([p.get_x() + 0.5 * p.get_width() for p in ax.patches])
         y_coords = year_df["Mean"].values
         ax.errorbar(x=x_coords, y=y_coords, yerr=year_stds, fmt="none", color="black")
+
+        all_df = year_df.groupby(by=["Year", "SSP"]).sum()
+        all_means = all_df["Mean"].values
+        x_coords = [0, 1, 2, 3]
+        y_coords = all_means
+        ax.scatter(x=x_coords, y=y_coords)
 
     output_file = f"{output_dir}/{country_long_name}_{factor_name}_{pop}_{baseline}.png"
     plt.savefig(output_file)
@@ -88,7 +94,12 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
 
 
 def main():
-    diseases_stacked(factor_name="Age", factors=age_groups, pop="var", baseline="2015", country=35, country_long_name="China")
+    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=183,
+                     country_long_name="US")
+    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=35,
+                     country_long_name="China")
+    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=-1,
+                     country_long_name="World")
 
 
 if __name__ == "__main__":
