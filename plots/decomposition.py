@@ -59,12 +59,12 @@ def get_models(ssp):
     models = sorted(set([file.split("/")[-1].split("_")[2] for file in files_2015]))
     # Add or remove models here
     models = [model for model in models if "EC-Earth3-AerChem" not in model]
-    # models = [model for model in models if model in ["CESM2-WACCM6", "GFDL-ESM4", "GISS-E2-1-G", "MIROC-ES2L",
-    # "MIROC6", "MRI-ESM2-0", "NorESM2-LM"]]
+    models = [model for model in models if model in ["CESM2-WACCM6", "GFDL-ESM4", "GISS-E2-1-G", "MIROC-ES2L",
+    "MIROC6", "MRI-ESM2-0", "NorESM2-LM"]]
     return models
 
 
-def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_std=False):
+def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_values=False):
     """Get mortality value from projections given a set of conditions"""
     ages = ["all_age_Mean"] if ages is None else ages
     disease = "Allcause" if disease is None else disease
@@ -83,14 +83,27 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_s
         if len(model_values) == 0:
             print(f"No values found in {model}", year, ssp, pop, baseline, disease)
         model_mean = np.mean(model_values)
+        # print(f"{model}: {model_mean}")
         factor_values.append(model_mean)
     if len(factor_values) == 0:
         print("No models found", year, ssp, pop, baseline, disease)
     factor_mean = np.mean(factor_values)
-    if return_std:
-        std = np.std(factor_mean)
-        return factor_mean, std
+    if return_values:
+        return factor_values
     return factor_mean
+
+
+def multi_year_mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_values=True):
+    """Call mort() for multiple years"""
+    years = np.arange(year - 2, year + 3) # +/- 2
+    if year == 2015 or year == 2040:
+        years = [year]
+    morts = list()
+    for i, year in enumerate(years):
+        morts.append(mort(pop, baseline, year, ssp, ages, disease, country, return_values))
+    mort_mean = np.mean(morts)
+    std = np.std(morts)
+    return mort_mean, std
 
 
 def init_by_factor(factor_name, factor):
@@ -134,6 +147,7 @@ def init_by_factor(factor_name, factor):
 
 
 def compute(factor_name, factors, ssp, country, country_long_name):
+    """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
     pms = []
     baselines = []
     pops = []
@@ -242,6 +256,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
 
 
 def decompose():
+    """Driver program for visualization/output"""
     A = "2010"
     B = "2015"
     # C = "2015"
