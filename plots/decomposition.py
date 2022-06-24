@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from regions import North_Africa_and_Middle_East, South_Asia, High_income_North_America, Western_Sub_Saharan_Africa, \
+    Eastern_Europe, Central_Europe
 
 ####################################################################################################
 #### CREATE DECOMPOSITION GRAPHS OF MORTALITY
@@ -41,14 +43,17 @@ age_groups = ["25-60", "60-80", "80+", "25+"]
 country_dict = get_country_names()
 
 # Custom country settings
-regions = ["World", "China", "India", "US-Canada", "Japan", "Middle East and N.Africa"]
+regions = ["World", "China", "Eastern Europe", "Central Europe", "South Asia", "US-Canada", "North Africa & Middle East",
+           "West Africa"]
 region_countries_names = [
     ["World"],
     ["China"],
-    ["India"],
-    ["Canada", "United States"],
-    ["Japan"],
-    ["Egypt"],
+    Eastern_Europe,
+    Central_Europe,
+    South_Asia,
+    High_income_North_America,
+    North_Africa_and_Middle_East,
+    Western_Sub_Saharan_Africa,
 ]
 region_countries = [
     [country_dict[country_name] for country_name in countries_names] for countries_names in region_countries_names
@@ -56,7 +61,7 @@ region_countries = [
 assert len(regions) == len(region_countries) == len(region_countries_names)
 
 # Choose factor
-factor_name = "Age"
+factor_name = "Disease"
 if factor_name == "Disease":
     factors = diseases
 elif factor_name == "Age":
@@ -76,7 +81,7 @@ def get_models(ssp):
     # Add or remove models here
     models = [model for model in models if "EC-Earth3-AerChem" not in model]
     models = [model for model in models if model in ["CESM2-WACCM6", "GFDL-ESM4", "GISS-E2-1-G", "MIROC-ES2L",
-    "MIROC6", "MRI-ESM2-0", "NorESM2-LM"]]
+                                                     "MIROC6", "MRI-ESM2-0", "NorESM2-LM"]]
     return models
 
 
@@ -113,7 +118,7 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, retu
 
 def multi_year_mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_values=True):
     """Call mort() for multiple years"""
-    years = np.arange(year - 2, year + 3) # +/- 2
+    years = np.arange(year - 2, year + 3)  # +/- 2
     if year == 2015 or year == 2040:
         years = [year]
     morts = list()
@@ -164,7 +169,7 @@ def init_by_factor(factor_name, factor):
     return ages, disease
 
 
-def decompose(factor_name, factors, ssp, countries, countries_names):
+def decompose(factor_name, factors, ssp, region, countries, countries_names):
     """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
     pms = []
     baselines = []
@@ -266,10 +271,10 @@ def decompose(factor_name, factors, ssp, countries, countries_names):
         deltas.append(delta_percent)
 
         print(
-            f"{ssp}, {countries_names}, {factor}: PM Contribution: {pm_percent}%; Population Contribution: "
+            f"{ssp}, {region}, {factor}: PM Contribution: {pm_percent}%; Population Contribution: "
             f"{pop_percent}%; Baseline Contribution: {baseline_percent}%"
         )
-        print(f"{ssp}, {countries_names}, {factor}: Overall Change: {delta_percent}%")
+        print(f"{ssp}, {region}, {factor}: Overall Change: {delta_percent}%")
     return pms, baselines, pops, deltas
 
 
@@ -286,8 +291,11 @@ def visualize():
 
     for ssp in ssps:
 
+        rows = 2
+        cols = 4
+
         # Initialize plotting
-        fig, axes = plt.subplots(2, 3, figsize=(16, 12))
+        fig, axes = plt.subplots(rows, cols, figsize=(16, 12))
         fig.suptitle(
             f"Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040 in {ssp}"
         )
@@ -298,12 +306,12 @@ def visualize():
         overall_df = pd.DataFrame()
 
         for i, (region, countries, countries_names) in enumerate(
-            zip(regions, region_countries, region_countries_names)
+                zip(regions, region_countries, region_countries_names)
         ):
 
             # Select current ax:
-            j = i // 3
-            k = i % 3
+            j = i // cols
+            k = i % cols
 
             ax = axes[j, k]
 
@@ -312,6 +320,7 @@ def visualize():
                 factor_name=factor_name,
                 factors=factors,
                 ssp=ssp,
+                region=region,
                 countries=countries,
                 countries_names=countries_names,
             )
