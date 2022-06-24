@@ -61,11 +61,13 @@ region_countries = [
 assert len(regions) == len(region_countries) == len(region_countries_names)
 
 # Choose factor
-factor_name = "Disease"
+factor_name = "SSP"
 if factor_name == "Disease":
     factors = diseases
 elif factor_name == "Age":
     factors = age_groups
+elif factor_name == "SSP":
+    factors = ssps
 else:
     raise NameError(f"{factor_name} not found!")
 
@@ -159,13 +161,14 @@ def init_by_factor(factor_name, factor):
         elif factor == "25+":
             ages = ["all_age_Mean"]
         else:
-            raise NameError(f"{factor} age group not found!")
+            raise NameError(f"{factor} ages group not found!")
         disease = None
     elif factor_name == "Disease":
         ages = None
         disease = factor
     else:
-        raise NameError(f"{factor_name} factor not found!")
+        ages = None
+        disease = None
     return ages, disease
 
 
@@ -177,6 +180,8 @@ def decompose(factor_name, factors, ssp, region, countries, countries_names):
     deltas = []
     for factor in factors:
         ages, disease = init_by_factor(factor_name, factor)
+        if factor_name == "SSP":
+            ssp = factor
         ref = mort(
             pop="2010",
             baseline="2015",
@@ -280,12 +285,6 @@ def decompose(factor_name, factors, ssp, region, countries, countries_names):
 
 def visualize():
     """Driver program for visualization/output"""
-    A = "2010"
-    B = "2015"
-    # C = "2015"
-    a = "var"
-    b = "2040"
-    # c = "2040"
 
     sns.set()
 
@@ -297,7 +296,7 @@ def visualize():
         # Initialize plotting
         fig, axes = plt.subplots(rows, cols, figsize=(16, 12))
         fig.suptitle(
-            f"Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040 in {ssp}"
+            f"Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''}"
         )
         # Plotting Settings
         ymin = -100
@@ -369,8 +368,10 @@ def visualize():
             ax = ax.get_legend().remove()
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
-        output_file = f"{output_dir}/{factor_name}_{ssp}.png"
+        output_file = f"{output_dir}/{factor_name}{ssp + '_' if factor_name != 'SSP' else ''}.png"
         plt.savefig(output_file)
+        if factor_name == "SSP":
+            break
         # output_file = os.path.join(output_dir, f"{factor_name}_{ssp}.csv")
         # overall_df = overall_df.reset_index(drop=True)
         # overall_df.to_csv(output_file, index=False)
