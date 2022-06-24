@@ -25,21 +25,38 @@ pop_ssp_dict = {
 
 
 def get_country_names():
+    """Return a list with all 193 countries"""
     countries_file = os.path.join(home_dir, "CMIP6_data", "population", "national_pop", "countryvalue_blank.csv")
     countries_df = pd.read_csv(countries_file, usecols=["COUNTRY"])
-    country_long_names = countries_df["COUNTRY"].values
-    return country_long_names
+    country_names = [*countries_df["COUNTRY"].values, "World"]
+    country_ids = [*countries_df.index.values, -1]
+    country_dict = dict(zip(country_names, country_ids))
+    return country_dict
 
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
-# countries = [-1, 35, 77, 183, 85, 53]
-# country_long_names = ["World", "China", "India", "The United States", "Japan", "Egypt"]
-countries = [*np.arange(0, 193), -1]
-country_long_names = [*get_country_names(), "World"]
-factor_name = "Disease"
+country_dict = get_country_names()
+
+# Custom country settings
+regions = ["World", "China", "India", "US-Canada", "Japan", "Middle East and N.Africa"]
+region_countries_names = [
+    ["World"],
+    ["China"],
+    ["India"],
+    ["Canada", "United States"],
+    ["Japan"],
+    ["Egypt"],
+]
+region_countries = [
+    [country_dict[country_name] for country_name in countries_names] for countries_names in region_countries_names
+]
+assert len(regions) == len(region_countries) == len(region_countries_names)
+
+# Choose factor
+factor_name = "Age"
 if factor_name == "Disease":
     factors = diseases
 elif factor_name == "Age":
@@ -63,8 +80,10 @@ def get_models(ssp):
     return models
 
 
-def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_values=False):
+def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, return_values=False):
     """Get mortality value from projections given a set of conditions"""
+    if countries is None:
+        countries = [-1]
     ages = ["all_age_Mean"] if ages is None else ages
     disease = "Allcause" if disease is None else disease
     models = get_models(ssp)
@@ -78,7 +97,7 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_v
 
         for j, file in enumerate(files):
             wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
-            model_values[j] = np.sum(wk.iloc[country][ages].values)
+            model_values[j] = np.sum(wk.iloc[countries][ages].values)
         if len(model_values) == 0:
             print(f"No values found in {model}", year, ssp, pop, baseline, disease)
         model_mean = np.mean(model_values)
@@ -145,7 +164,7 @@ def init_by_factor(factor_name, factor):
     return ages, disease
 
 
-def compute(factor_name, factors, ssp, country, country_long_name):
+def decompose(factor_name, factors, ssp, countries, countries_names):
     """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
     pms = []
     baselines = []
@@ -160,7 +179,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ssp=ssp,
             ages=ages,
             disease=disease,
-            country=country,
+            countries=countries,
         )
         delta = mort(
             pop="var",
@@ -169,7 +188,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ssp=ssp,
             ages=ages,
             disease=disease,
-            country=country,
+            countries=countries,
         ) - mort(
             pop="2010",
             baseline="2015",
@@ -177,7 +196,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ssp=ssp,
             ages=ages,
             disease=disease,
-            country=country,
+            countries=countries,
         )
 
         # JF Method: (Pop 2010, Base 2015, Year 2015) ->
@@ -191,7 +210,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ssp=ssp,
             ages=ages,
             disease=disease,
-            country=country,
+            countries=countries,
         ) - mort(
             pop="2010",
             baseline="2015",
@@ -199,7 +218,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ages=ages,
             ssp=ssp,
             disease=disease,
-            country=country,
+            countries=countries,
         )
         baseline_contribution = mort(
             pop="2010",
@@ -208,7 +227,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ages=ages,
             ssp=ssp,
             disease=disease,
-            country=country,
+            countries=countries,
         ) - mort(
             pop="2010",
             baseline="2015",
@@ -216,7 +235,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ages=ages,
             ssp=ssp,
             disease=disease,
-            country=country,
+            countries=countries,
         )
         pop_contribution = mort(
             pop="var",
@@ -225,7 +244,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ages=ages,
             ssp=ssp,
             disease=disease,
-            country=country,
+            countries=countries,
         ) - mort(
             pop="2010",
             baseline="2040",
@@ -233,7 +252,7 @@ def compute(factor_name, factors, ssp, country, country_long_name):
             ages=ages,
             ssp=ssp,
             disease=disease,
-            country=country,
+            countries=countries,
         )
 
         pm_percent = np.round(pm_contribution / ref * 100, 1)
@@ -247,14 +266,14 @@ def compute(factor_name, factors, ssp, country, country_long_name):
         deltas.append(delta_percent)
 
         print(
-            f"{ssp}, {country_long_name}, {factor}: PM Contribution: {pm_percent}%; Population Contribution: "
+            f"{ssp}, {countries_names}, {factor}: PM Contribution: {pm_percent}%; Population Contribution: "
             f"{pop_percent}%; Baseline Contribution: {baseline_percent}%"
         )
-        print(f"{ssp}, {country_long_name}, {factor}: Overall Change: {delta_percent}%")
+        print(f"{ssp}, {countries_names}, {factor}: Overall Change: {delta_percent}%")
     return pms, baselines, pops, deltas
 
 
-def decompose():
+def visualize():
     """Driver program for visualization/output"""
     A = "2010"
     B = "2015"
@@ -278,27 +297,29 @@ def decompose():
 
         overall_df = pd.DataFrame()
 
-        for i, (country, country_long_name) in enumerate(
-            zip(countries, country_long_names)
+        for i, (region, countries, countries_names) in enumerate(
+            zip(regions, region_countries, region_countries_names)
         ):
 
             # Select current ax:
             j = i // 3
             k = i % 3
 
+            ax = axes[j, k]
+
             # Compute contributions
-            pms, baselines, pops, deltas = compute(
+            pms, baselines, pops, deltas = decompose(
                 factor_name=factor_name,
                 factors=factors,
                 ssp=ssp,
-                country=country,
-                country_long_name=country_long_name,
+                countries=countries,
+                countries_names=countries_names,
             )
             # Visualize with a stacked bar plot
 
             df = pd.DataFrame(
                 {
-                    "Country": country_long_name,
+                    "Region": region,
                     factor_name: factors,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
@@ -306,46 +327,48 @@ def decompose():
                     "Overall": deltas,
                 },
             )
-            overall_df = overall_df.append(df)
-            # wk_df = df[
-            #     [factor_name, "PM2.5 Concentration", "Baseline Mortality", "Population"]
-            # ]
-            # wk_df = wk_df.sort_index(axis=1)
-            # wk_df.plot(
-            #     x=factor_name,
-            #     kind="bar",
-            #     stacked=True,
-            #     ax=ax,
-            #     color=["gold", "cornflowerblue", "lightgreen"],
-            # )
-            # sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax)
-            #
-            # ax = axes[j, k]
-            # ax.set_ylim([ymin, ymax])
-            # ax.set_title(country_long_name)
-            # if k == 0:  # First column
-            #     ax.set_ylabel("Change in Percent")
-            # else:
-            #     ax.set_ylabel("")
-            # if j == axes.shape[0] - 1:  # Last row
-            #     ax.set_xlabel(factor_name)
-            # else:
-            #     ax.set_xlabel("")
-        # # Plot legend
-        # handles, labels = axes[0, 0].get_legend_handles_labels()
-        # fig.legend(handles, labels, loc="upper right")
-        # for ax in axes.flatten():
-        #     ax = ax.get_legend().remove()
+            # overall_df = overall_df.append(df)
+            wk_df = df[
+                [factor_name, "PM2.5 Concentration", "Baseline Mortality", "Population"]
+            ]
+            wk_df = wk_df.sort_index(axis=1)
+            wk_df.plot(
+                x=factor_name,
+                kind="bar",
+                stacked=True,
+                ax=ax,
+                color=["gold", "cornflowerblue", "lightgreen"],
+            )
 
-        # output_file = f"{output_dir}/{factor_name}_{ssp}.png"
-        # plt.savefig(output_file)
-        output_file = os.path.join(output_dir, f"{factor_name}_{ssp}.csv")
-        overall_df = overall_df.reset_index(drop=True)
-        overall_df.to_csv(output_file, index=False)
+            # Plot dots representing overall change in mortality
+            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax)
+            ax.set_ylim([ymin, ymax])
+            ax.set_title(region)
+            if k == 0:  # First column
+                ax.set_ylabel("Change in Percent")
+            else:
+                ax.set_ylabel("")
+            if j == axes.shape[0] - 1:  # Last row
+                ax.set_xlabel(factor_name)
+            else:
+                ax.set_xlabel("")
+
+        # Plot legend
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc="upper right")
+        for ax in axes.flatten():
+            ax = ax.get_legend().remove()
+        fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
+
+        output_file = f"{output_dir}/{factor_name}_{ssp}.png"
+        plt.savefig(output_file)
+        # output_file = os.path.join(output_dir, f"{factor_name}_{ssp}.csv")
+        # overall_df = overall_df.reset_index(drop=True)
+        # overall_df.to_csv(output_file, index=False)
 
 
 def main():
-    decompose()
+    visualize()
 
 
 if __name__ == "__main__":
