@@ -4,8 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from regions import North_Africa_and_Middle_East, South_Asia, High_income_North_America, Western_Sub_Saharan_Africa, \
-    Eastern_Europe, Central_Europe
+from regions import *
 
 ####################################################################################################
 #### CREATE DECOMPOSITION GRAPHS OF MORTALITY
@@ -43,18 +42,36 @@ age_groups = ["25-60", "60-80", "80+", "25+"]
 country_dict = get_country_names()
 
 # Custom country settings
-regions = ["World", "China", "Eastern Europe", "Central Europe", "South Asia", "US-Canada", "North Africa & Middle East",
-           "West Africa"]
-region_countries_names = [
-    ["World"],
-    ["China"],
-    Eastern_Europe,
-    Central_Europe,
-    South_Asia,
-    High_income_North_America,
-    North_Africa_and_Middle_East,
-    Western_Sub_Saharan_Africa,
-]
+
+region_countries_dict = {
+    "W. Europe": Western_Europe,
+    "Central Europe": Central_Europe,
+    "E. Europe": Eastern_Europe,
+    "Canada, US": High_income_North_America,
+    "Australia, New Zealand": Australasia,
+
+    "Caribbean": Caribbean,
+    "Central America": Central_Latin_America,
+    "Argentina, Chile, Uruguay": Southern_Latin_America,
+    "Brazil, Paraguay": Tropical_Latin_America,
+    "Bolivia, Ecuador, Peru": Andean_Latin_America,
+
+    "Central Asia": Central_Asia,
+    "South Asia": South_Asia,
+    "East Asia": East_Asia,
+    "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
+    "S.E. Asia": Southeast_Asia,
+
+    "N. Africa and Middle East": North_Africa_and_Middle_East,
+    "Central Africa": Central_Sub_Saharan_Africa,
+    "E. Africa": Eastern_Sub_Saharan_Africa,
+    "S. Africa": Southern_Sub_Saharan_Africa,
+    "W. Africa": Western_Sub_Saharan_Africa,
+
+    "World": ["World"],
+}
+region_countries_names = list(region_countries_dict.values())
+regions = list(region_countries_dict.keys())
 region_countries = [
     [country_dict[country_name] for country_name in countries_names] for countries_names in region_countries_names
 ]
@@ -290,11 +307,11 @@ def visualize():
 
     for ssp in ssps:
 
-        rows = 2
-        cols = 4
+        rows = 5
+        cols = 5
 
         # Initialize plotting
-        fig, axes = plt.subplots(rows, cols, figsize=(16, 12))
+        fig, axes = plt.subplots(rows, cols, figsize=(20, 25))
         fig.suptitle(
             f"Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''}"
         )
@@ -349,22 +366,19 @@ def visualize():
             )
 
             # Plot dots representing overall change in mortality
-            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax)
+            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax, color="orangered")
             ax.set_ylim([ymin, ymax])
             ax.set_title(region)
-            if k == 0:  # First column
-                ax.set_ylabel("Change in Percent")
-            else:
-                ax.set_ylabel("")
-            if j == axes.shape[0] - 1:  # Last row
-                ax.set_xlabel(factor_name)
-            else:
-                ax.set_xlabel("")
+            ax.set_ylabel("")
+            ax.set_xlabel(factor_name)
+            ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
 
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
         fig.legend(handles, labels, loc="upper right")
-        for ax in axes.flatten():
+        for i, ax in enumerate(axes.flatten()):
+            if i >= len(regions):
+                continue
             ax = ax.get_legend().remove()
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
