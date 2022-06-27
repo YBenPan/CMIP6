@@ -114,7 +114,7 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, retu
     factor_values = []
     pop_ssp = pop_ssp_dict[ssp]
 
-    for i, model in enumerate(models):
+    for model in models:
         search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
         files = sorted(glob(search_str))
         model_values = np.zeros(len(files))
@@ -122,6 +122,7 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, retu
         for j, file in enumerate(files):
             wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
             model_values[j] = np.sum(wk.iloc[countries][ages].values)
+    
         if len(model_values) == 0:
             print(f"No values found in {model}", year, ssp, pop, baseline, disease)
         model_mean = np.mean(model_values)
@@ -135,14 +136,16 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, retu
     return factor_mean
 
 
-def multi_year_mort(pop, baseline, year, ssp, ages=None, disease=None, country=-1, return_values=True):
+def multi_year_mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, return_values=True):
     """Call mort() for multiple years"""
+    if countries is None:
+        countries = [-1]
     years = np.arange(year - 2, year + 3)  # +/- 2
     if year == 2015 or year == 2040:
         years = [year]
     morts = list()
-    for i, year in enumerate(years):
-        morts.append(mort(pop, baseline, year, ssp, ages, disease, country, return_values))
+    for year in years:
+        morts.append(mort(pop, baseline, year, ssp, ages, disease, countries, return_values))
     mort_mean = np.mean(morts)
     std = np.std(morts)
     return mort_mean, std
@@ -189,7 +192,7 @@ def init_by_factor(factor_name, factor):
     return ages, disease
 
 
-def decompose(factor_name, factors, ssp, region, countries, countries_names):
+def decompose(factor_name, factors, ssp, region, countries):
     """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
     pms = []
     baselines = []
@@ -313,13 +316,13 @@ def visualize():
         # Initialize plotting
         fig, axes = plt.subplots(rows, cols, figsize=(20, 25))
         fig.suptitle(
-            f"Decomposition of changes in mortality attributable to PM2.5 from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''}"
+            f"Decomposition of changes in PM2.5-attributable mortality from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''} by factor"
         )
         # Plotting Settings
         ymin = -100
         ymax = 400
 
-        overall_df = pd.DataFrame()
+        # overall_df = pd.DataFrame()
 
         for i, (region, countries, countries_names) in enumerate(
                 zip(regions, region_countries, region_countries_names)
@@ -338,7 +341,6 @@ def visualize():
                 ssp=ssp,
                 region=region,
                 countries=countries,
-                countries_names=countries_names,
             )
             # Visualize with a stacked bar plot
 
@@ -372,9 +374,11 @@ def visualize():
             ax.set_ylabel("")
             ax.set_xlabel(factor_name)
             ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
+            ax.set_yticklabels(["-100%", "0%", "100%", "200%", "300%", "400%"])
 
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
+        labels = ["Change in mortality due to Baseline Mortality", "Change in mortality due to PM2.5 Concentration", "Change in mortality due to Population"]
         fig.legend(handles, labels, loc="upper right")
         for i, ax in enumerate(axes.flatten()):
             if i >= len(regions):
