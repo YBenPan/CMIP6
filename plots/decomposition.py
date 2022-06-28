@@ -25,6 +25,13 @@ pop_ssp_dict = {
 }
 
 
+# Run Settings
+ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+age_groups = ["25-60", "60-80", "80+", "25+"]
+
+# Custom region settings
+
 def get_country_names():
     """Return a list with all 193 countries"""
     countries_file = os.path.join(home_dir, "CMIP6_data", "population", "national_pop", "countryvalue_blank.csv")
@@ -33,15 +40,7 @@ def get_country_names():
     country_ids = [*countries_df.index.values, -1]
     country_dict = dict(zip(country_names, country_ids))
     return country_dict
-
-
-# Run Settings
-ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
-age_groups = ["25-60", "60-80", "80+", "25+"]
 country_dict = get_country_names()
-
-# Custom country settings
 
 region_countries_dict = {
     "W. Europe": Western_Europe,

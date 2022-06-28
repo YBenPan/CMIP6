@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from decomposition import multi_year_mort, init_by_factor
+from decomposition import multi_year_mort, init_by_factor, get_country_names
+from regions import *
 
 ####################################################################################################
 #### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
@@ -25,12 +26,53 @@ pop_ssp_dict = {
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-years = [2015, 2020, 2025, 2030, 2035, 2040]
+years = [2015, 2020, 2030, 2040]
 diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+"]
 
 
-def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_long_name="World"):
+# Custom region settings
+region_countries_dict = {
+    "W. Europe": Western_Europe,
+    "Central Europe": Central_Europe,
+    "E. Europe": Eastern_Europe,
+    "Canada, US": High_income_North_America,
+    "Australia, New Zealand": Australasia,
+
+    "Caribbean": Caribbean,
+    "Central America": Central_Latin_America,
+    "Argentina, Chile, Uruguay": Southern_Latin_America,
+    "Brazil, Paraguay": Tropical_Latin_America,
+    "Bolivia, Ecuador, Peru": Andean_Latin_America,
+
+    "Central Asia": Central_Asia,
+    "South Asia": South_Asia,
+    "East Asia": East_Asia,
+    "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
+    "S.E. Asia": Southeast_Asia,
+
+    "N. Africa and Middle East": North_Africa_and_Middle_East,
+    "Central Africa": Central_Sub_Saharan_Africa,
+    "E. Africa": Eastern_Sub_Saharan_Africa,
+    "S. Africa": Southern_Sub_Saharan_Africa,
+    "W. Africa": Western_Sub_Saharan_Africa,
+
+    "World": ["World"],
+}
+country_dict = get_country_names()
+region_countries_names = list(region_countries_dict.values())
+regions = list(region_countries_dict.keys())
+region_countries = [
+    [country_dict[country_name] for country_name in countries_names] for countries_names in region_countries_names
+]
+assert len(regions) == len(region_countries) == len(region_countries_names)
+
+
+def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region=None):
+    if countries == None:
+        countries = [-1]
+    if region == None:
+        region = "World"
     df = pd.DataFrame(columns=["Year", "SSP", factor_name, "Mean"])
     xlabels = []
     for i, year in enumerate(years):
@@ -48,7 +90,7 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
                     ssp=ssp,
                     ages=ages,
                     disease=disease,
-                    country=country,
+                    countries=countries,
                     return_values=True,
                 )
                 df = df.append(
@@ -61,7 +103,7 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
                     },
                     ignore_index=True,
                 )
-                print(f"{year}, {ssp}, {pop}, {baseline}, {factor} mean: {factor_mean}; STD: {std}")
+                print(f"Region {region}. {year}, {ssp}, {pop}, {baseline}, {factor} mean: {factor_mean}; STD: {std}")
             xlabels.append(f"{year}, {ssp}")
 
     sns.set()
@@ -70,7 +112,7 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
     g.set_xticklabels(["1", "2", "3", "5"])
     g.set_titles("{col_name}")
     fig = g.fig
-    fig.suptitle(country_long_name)
+    fig.suptitle(region)
     fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
     # Add error bars
@@ -88,18 +130,17 @@ def diseases_stacked(factor_name, factors, pop, baseline, country=-1, country_lo
         y_coords = all_means
         ax.scatter(x=x_coords, y=y_coords)
 
-    output_file = f"{output_dir}/{country_long_name}_{factor_name}_{pop}_{baseline}.png"
+    output_file = f"{output_dir}/{region}_{factor_name}_{pop}_{baseline}.png"
     plt.savefig(output_file)
     # plt.show()
+    plt.close(fig)
 
 
 def main():
-    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=183,
-                     country_long_name="US")
-    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=35,
-                     country_long_name="China")
-    diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", country=-1,
-                     country_long_name="World")
+    for (region, countries, countries_names) in zip(regions, region_countries, region_countries_names):   
+        diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", countries=countries,
+                         region=region)
+
 
 
 if __name__ == "__main__":
