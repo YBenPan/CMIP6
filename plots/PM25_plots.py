@@ -10,11 +10,10 @@ from netCDF4 import Dataset
 import math
 import cartopy.crs as ccrs
 
-ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
-# ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-# years = [2015, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
-years = np.arange(2015, 2105, 10)
-pm25_path = "D:/CMIP6_data/PM2.5_annual"
+# ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
+ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+years = [2015, 2020, 2030, 2040]
+pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
 latitude = np.arange(-89.75, 90.25, 0.5)
 longitude = np.arange(0.25, 360.25, 0.5)
 
@@ -35,7 +34,7 @@ def mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop):
         #     continue
 
         # Compute mean PM2.5 concentration of all realizations
-        files = sorted(glob(f"{pm25_path}/{ssp}/mmrpm2p5/{model}/*/annual_avg_{year}.nc"))
+        files = sorted(glob(os.path.join(pm25_path, ssp, "mmrpm2p5", model, "*", f"annual_avg_{year}.nc")))
         if len(files) == 0:
             continue
         model_conc = []
@@ -72,14 +71,14 @@ def mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop):
         all_conc.append(model_conc)
         all_awm.append(model_awm)
         all_pwm.append(model_pwm)
-        print(f"{model}: PWM: {np.round(model_pwm, 2)}, AWM: {np.round(model_awm, 2)}")
+        # print(f"{model}: PWM: {np.round(model_pwm, 2)}, AWM: {np.round(model_awm, 2)}")
     all_conc = np.mean(all_conc, axis=0)
     all_awm = np.mean(all_awm, axis=0)
     all_pwm = np.mean(all_pwm, axis=0)
     return all_conc, all_awm, all_pwm
 
 
-def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_file="countryFractions_2010_0.5x0.5.nc",
+def get_country_mask(base_path="/home/ybenp/CMIP6_data/population/national_pop/", base_file="countryFractions_2010_0.5x0.5.nc",
                      country=-1, output=False):
     # If no country is supplied, then return uniform mask
     if country == -1:
@@ -107,7 +106,7 @@ def get_country_mask(base_path="D:/CMIP6_data/population/national_pop/", base_fi
     us_fraction = fractionCountry[country]
     if not output:
         return us_fraction
-    output_path = "D:/CMIP6_data/population/national_pop"
+    output_path = "/home/ybenp/CMIP6_data/population/national_pop"
     output_file = f"{output_path}/us_mask.nc"
     ds = Dataset(output_file, "w", format="NETCDF4")
     ds.createDimension("lat", len(latitude))
@@ -144,7 +143,7 @@ def get_grid_area(fractionCountry=np.ones((360, 720))):
 
 
 def get_pop(fractionCountry=np.ones((360, 720))):
-    pop_path = "D:/CMIP6_data/population/gridded_pop/ssp1"
+    pop_path = "/home/ybenp/CMIP6_data/population/gridded_pop/ssp1"
     pop_file = f"{pop_path}/ssp1_tot_2020.nc"
     f1 = Dataset(pop_file, "r")
     pop = f1["population"][:] * fractionCountry
@@ -154,7 +153,7 @@ def get_pop(fractionCountry=np.ones((360, 720))):
 
 
 # Get country mask
-fractionCountry = get_country_mask(country=183)
+fractionCountry = get_country_mask(country=-1)
 
 # Get grid areas for area weighted mean
 grid_area, tot_area = get_grid_area(fractionCountry)
@@ -164,7 +163,7 @@ pop, tot_pop = get_pop(fractionCountry)
 
 
 def line():
-    pm25_path = "D:/CMIP6_data/PM2.5_annual"
+    # pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
     sns.set_theme()
     fig, axes = plt.subplots(2)
     fig.set_size_inches(6.4, 9.6)
@@ -174,7 +173,7 @@ def line():
         pwm_data = np.zeros(len(years))
 
         for j, year in enumerate(years):
-            models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
+            models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
             all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop)
 
             # Multi-model mean
@@ -194,7 +193,7 @@ def line():
     plt.suptitle("PM2.5 Concentration in the United States (μg / m^3)")
     plt.tight_layout()
     plt.show()
-    # plt.savefig("D:/CMIP6_Images/PM2.5/us.png")
+    # plt.savefig("/home/ybenp/CMIP6_Images/PM2.5/us.png")
 
 
 def map_plot(year, ssp, longitude, latitude, all_conc, fig, ax, cmap, norm, vmin=0, vmax=100, **kwargs):
@@ -231,36 +230,37 @@ def map():
     #     colors[i] = color
     # cmap = ListedColormap(colors)
 
-    bounds = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8]
+    bounds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30]
     cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
 
     vmin = 0
-    vmax = 8
+    vmax = 60
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
-    pm25_path = "D:/CMIP6_data/PM2.5_annual"
+    # pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
 
     for i, ssp in enumerate(ssps):
 
-        fig, axes = plt.subplots(3, 3, subplot_kw={"projection": ccrs.PlateCarree()})
+        fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
         fig.set_size_inches(12, 8)
 
         fig.suptitle(f"PM2.5 concentration in {ssp}")
 
         for j, year in enumerate(years):
-            models = os.listdir(f"{pm25_path}/{ssp}/mmrpm2p5")
+            models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
 
             all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountry, grid_area, tot_area, pop, tot_pop)
 
-            ax_i = j // 3
-            ax_j = j % 3
+            ax_i = j // 2
+            ax_j = j % 2
 
             map_plot(year, ssp, longitude, latitude, all_conc, vmin=vmin, vmax=vmax, fig=fig, ax=axes[ax_i, ax_j],
-                     cmap=cmap, norm=norm, extent=[-180, -60, 15, 70])
+                     cmap=cmap, norm=norm)
+            # extent=[-180, -60, 15, 70]
 
             print(f"{ssp} {year} inter-model PWM: {np.round(all_pwm, 2)}, AWM: {np.round(all_awm, 2)}")
 
-        output_dir = f"D:/CMIP6_Images/PM2.5/map"
+        output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
         os.makedirs(output_dir, exist_ok=True)
         fig.tight_layout()
         cbar = fig.colorbar(
@@ -272,14 +272,14 @@ def map():
         )
         cbar.set_label("Concentration (μg / m^3)")
         # plt.show()
-        plt.savefig(f"{output_dir}/us_{ssp}.png")
+        plt.savefig(f"{output_dir}/World_{ssp}.png")
         plt.close(fig)
 
 
 def main():
-    get_country_mask(country=183, output=True)
+    # get_country_mask(country=183, output=True)
     # line()
-    # map()
+    map()
 
 
 if __name__ == "__main__":
