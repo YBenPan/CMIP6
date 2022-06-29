@@ -30,51 +30,58 @@ ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
 
-# Custom region settings
 
 def get_country_names():
     """Return a list with all 193 countries"""
-    countries_file = os.path.join(home_dir, "CMIP6_data", "population", "national_pop", "countryvalue_blank.csv")
+    countries_file = os.path.join(
+        home_dir, "CMIP6_data", "population", "national_pop", "countryvalue_blank.csv"
+    )
     countries_df = pd.read_csv(countries_file, usecols=["COUNTRY"])
     country_names = [*countries_df["COUNTRY"].values, "World"]
     country_ids = [*countries_df.index.values, -1]
     country_dict = dict(zip(country_names, country_ids))
     return country_dict
+
+    
+def get_regions():
+    """Return a list of regions with their country IDs and names"""
+    region_countries_dict = {
+        # Custom region settings
+        "W. Europe": Western_Europe,
+        "Central Europe": Central_Europe,
+        "E. Europe": Eastern_Europe,
+        "Canada, US": High_income_North_America,
+        "Australia, New Zealand": Australasia,
+        "Caribbean": Caribbean,
+        "Central America": Central_Latin_America,
+        "Argentina, Chile, Uruguay": Southern_Latin_America,
+        "Brazil, Paraguay": Tropical_Latin_America,
+        "Bolivia, Ecuador, Peru": Andean_Latin_America,
+        "Central Asia": Central_Asia,
+        "South Asia": South_Asia,
+        "East Asia": East_Asia,
+        "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
+        "S.E. Asia": Southeast_Asia,
+        "N. Africa and Middle East": North_Africa_and_Middle_East,
+        "Central Africa": Central_Sub_Saharan_Africa,
+        "E. Africa": Eastern_Sub_Saharan_Africa,
+        "S. Africa": Southern_Sub_Saharan_Africa,
+        "W. Africa": Western_Sub_Saharan_Africa,
+        "World": ["World"],
+    }
+    region_countries_names = list(region_countries_dict.values())
+    regions = list(region_countries_dict.keys())
+    region_countries = [
+        [country_dict[country_name] for country_name in countries_names]
+        for countries_names in region_countries_names
+    ]
+    assert len(regions) == len(region_countries) == len(region_countries_names)
+    return regions, region_countries, region_countries_names
+
+
+# Get countries and regions
 country_dict = get_country_names()
-
-region_countries_dict = {
-    "W. Europe": Western_Europe,
-    "Central Europe": Central_Europe,
-    "E. Europe": Eastern_Europe,
-    "Canada, US": High_income_North_America,
-    "Australia, New Zealand": Australasia,
-
-    "Caribbean": Caribbean,
-    "Central America": Central_Latin_America,
-    "Argentina, Chile, Uruguay": Southern_Latin_America,
-    "Brazil, Paraguay": Tropical_Latin_America,
-    "Bolivia, Ecuador, Peru": Andean_Latin_America,
-
-    "Central Asia": Central_Asia,
-    "South Asia": South_Asia,
-    "East Asia": East_Asia,
-    "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
-    "S.E. Asia": Southeast_Asia,
-
-    "N. Africa and Middle East": North_Africa_and_Middle_East,
-    "Central Africa": Central_Sub_Saharan_Africa,
-    "E. Africa": Eastern_Sub_Saharan_Africa,
-    "S. Africa": Southern_Sub_Saharan_Africa,
-    "W. Africa": Western_Sub_Saharan_Africa,
-
-    "World": ["World"],
-}
-region_countries_names = list(region_countries_dict.values())
-regions = list(region_countries_dict.keys())
-region_countries = [
-    [country_dict[country_name] for country_name in countries_names] for countries_names in region_countries_names
-]
-assert len(regions) == len(region_countries) == len(region_countries_names)
+regions, region_countries, region_countries_names = get_regions()
 
 # Choose factor
 factor_name = "SSP"
@@ -98,12 +105,33 @@ def get_models(ssp):
     models = sorted(set([file.split("/")[-1].split("_")[2] for file in files_2015]))
     # Add or remove models here
     models = [model for model in models if "EC-Earth3-AerChem" not in model]
-    models = [model for model in models if model in ["CESM2-WACCM6", "GFDL-ESM4", "GISS-E2-1-G", "MIROC-ES2L",
-                                                     "MIROC6", "MRI-ESM2-0", "NorESM2-LM"]]
+    models = [
+        model
+        for model in models
+        if model
+        in [
+            "CESM2-WACCM6",
+            "GFDL-ESM4",
+            "GISS-E2-1-G",
+            "MIROC-ES2L",
+            "MIROC6",
+            "MRI-ESM2-0",
+            "NorESM2-LM",
+        ]
+    ]
     return models
 
 
-def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, return_values=False):
+def mort(
+    pop,
+    baseline,
+    year,
+    ssp,
+    ages=None,
+    disease=None,
+    countries=None,
+    return_values=False,
+):
     """Get mortality value from projections given a set of conditions"""
     if countries is None:
         countries = [-1]
@@ -121,7 +149,7 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, retu
         for j, file in enumerate(files):
             wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
             model_values[j] = np.sum(wk.iloc[countries][ages].values)
-    
+
         if len(model_values) == 0:
             print(f"No values found in {model}", year, ssp, pop, baseline, disease)
         model_mean = np.mean(model_values)
@@ -135,7 +163,16 @@ def mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, retu
     return factor_mean
 
 
-def multi_year_mort(pop, baseline, year, ssp, ages=None, disease=None, countries=None, return_values=True):
+def multi_year_mort(
+    pop,
+    baseline,
+    year,
+    ssp,
+    ages=None,
+    disease=None,
+    countries=None,
+    return_values=True,
+):
     """Call mort() for multiple years"""
     if countries is None:
         countries = [-1]
@@ -144,7 +181,9 @@ def multi_year_mort(pop, baseline, year, ssp, ages=None, disease=None, countries
         years = [year]
     morts = list()
     for year in years:
-        morts.append(mort(pop, baseline, year, ssp, ages, disease, countries, return_values))
+        morts.append(
+            mort(pop, baseline, year, ssp, ages, disease, countries, return_values)
+        )
     mort_mean = np.mean(morts)
     std = np.std(morts)
     return mort_mean, std
@@ -324,7 +363,7 @@ def visualize():
         # overall_df = pd.DataFrame()
 
         for i, (region, countries, countries_names) in enumerate(
-                zip(regions, region_countries, region_countries_names)
+            zip(regions, region_countries, region_countries_names)
         ):
 
             # Select current ax:
@@ -367,7 +406,9 @@ def visualize():
             )
 
             # Plot dots representing overall change in mortality
-            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax, color="orangered")
+            sns.scatterplot(
+                x=factor_name, y="Overall", data=df, ax=ax, color="orangered"
+            )
             ax.set_ylim([ymin, ymax])
             ax.set_title(region)
             ax.set_ylabel("")
@@ -377,7 +418,11 @@ def visualize():
 
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
-        labels = ["Change in mortality due to Baseline Mortality", "Change in mortality due to PM2.5 Concentration", "Change in mortality due to Population"]
+        labels = [
+            "Change in mortality due to Baseline Mortality",
+            "Change in mortality due to PM2.5 Concentration",
+            "Change in mortality due to Population",
+        ]
         fig.legend(handles, labels, loc="upper right")
         for i, ax in enumerate(axes.flatten()):
             if i >= len(regions):
@@ -385,7 +430,9 @@ def visualize():
             ax = ax.get_legend().remove()
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
-        output_file = f"{output_dir}/{factor_name}{ssp + '_' if factor_name != 'SSP' else ''}.png"
+        output_file = (
+            f"{output_dir}/{factor_name}{ssp + '_' if factor_name != 'SSP' else ''}.png"
+        )
         plt.savefig(output_file)
         if factor_name == "SSP":
             break
