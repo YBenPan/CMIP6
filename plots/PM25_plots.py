@@ -277,7 +277,6 @@ def map_plot(
     **kwargs,
 ):
     """Map Plot"""
-    ax.coastlines(resolution="10m")
     if "extent" in kwargs:
         ax.set_extent(kwargs["extent"], ccrs.PlateCarree())
     ax.set_title(f"{year}")
@@ -388,13 +387,73 @@ def map(region, countries, countries_names):
         plt.close(fig)
 
 
+def map_2015(countries=None):
+    """Driver program for map plots"""
+    # Get country mask
+    fractionCountries = get_countries_mask(countries=countries)
+
+    # Get grid areas for area weighted mean
+    grid_area, tot_area = get_grid_area(fractionCountries)
+
+    # Get population for population weighted mean
+    pop, tot_pop = get_pop(fractionCountries)
+    
+    sns.set()
+
+    bounds = [0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 40, 50, 60]
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
+
+    vmin = 0
+    vmax = 60
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+    # pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
+    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(18, 8)
+    fig.suptitle(f"PM2.5 concentration in 2015")
+    year = 2015
+
+    conc = []
+
+    for i, ssp in enumerate(ssps):
+
+        all_conc, all_awm, all_pwm = mean(
+            ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
+        )
+        conc.append(all_conc)
+    
+    conc = np.mean(conc, axis=0)
+
+    ax.pcolormesh(
+        longitude, latitude, conc, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
+    )
+    ax.add_feature(cartopy.feature.OCEAN)
+    ax.add_feature(cartopy.feature.COASTLINE)
+    ax.add_feature(cartopy.feature.BORDERS)
+    ax.coastlines(resolution="10m")
+
+    output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
+    os.makedirs(output_dir, exist_ok=True)
+    cbar = fig.colorbar(
+        matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
+        ax=ax,
+        ticks=bounds,
+        spacing="proportional",
+        shrink=0.9,
+    )
+    cbar.set_label("Concentration (μg / m^3)")
+    plt.savefig(f"{output_dir}/World_2015.png")
+    plt.close(fig)
+
+
 def main():
     # line()
     # map()
     # Get countries and regions
     country_dict = get_country_names()
     regions, region_countries, region_countries_names = get_regions()
-    get_means(regions, region_countries, region_countries_names, ssp="ssp370", year=2015)
+    # get_means(regions, region_countries, region_countries_names, ssp="ssp370", year=2015)
+    map_2015()
 
 
 if __name__ == "__main__":
