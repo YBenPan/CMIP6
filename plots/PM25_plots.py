@@ -338,10 +338,10 @@ def map(region, countries, countries_names):
         fig.suptitle(f"PM2.5 concentration in {ssp}")
 
         for j, year in enumerate(years):
-            models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
+            # models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
 
             all_conc, all_awm, all_pwm = mean(
-                models, ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
+                ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
             )
 
             ax_i = j // 2
@@ -446,6 +446,65 @@ def map_2015(countries=None):
     plt.close(fig)
 
 
+def map_delta(countries=None):
+    """Driver program for delta PM2.5 map plots"""
+    # Get country mask
+    fractionCountries = get_countries_mask(countries=countries)
+
+    # Get grid areas for area weighted mean
+    grid_area, tot_area = get_grid_area(fractionCountries)
+
+    # Get population for population weighted mean
+    pop, tot_pop = get_pop(fractionCountries)
+
+    fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(18, 8)
+    fig.suptitle(f"Change in PM2.5 concentration")
+
+    bounds = [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
+
+    vmin = -100
+    vmax = 300
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+    for i, ssp in enumerate(ssps):
+        
+        conc_2015, awm_2015, pwm_2015 = mean(
+            ssp, "2015", fractionCountries, grid_area, tot_area, pop, tot_pop
+        )
+        conc_2040, awm_2040, pwm_2040 = mean(
+            ssp, "2040", fractionCountries, grid_area, tot_area, pop, tot_pop
+        )
+
+        conc = (conc_2040 - conc_2015) / conc_2015 * 100
+        
+        ax_i = i // 2
+        ax_j = i % 2
+        ax = axes[ax_i, ax_j]
+
+        ax.pcolormesh(
+            longitude, latitude, conc, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
+        )
+        ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.COASTLINE)
+        ax.add_feature(cartopy.feature.BORDERS)
+        ax.set_title(ssp)
+
+    output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
+    os.makedirs(output_dir, exist_ok=True)
+    cbar = fig.colorbar(
+        matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
+        ax=axes.ravel().tolist(),
+        ticks=bounds,
+        spacing="proportional",
+        shrink=0.9,
+    )
+    cbar.set_label("Percent Change in Concentration")
+    plt.savefig(f"{output_dir}/Delta.png")
+    plt.close(fig)
+        
+        
 def main():
     # line()
     # map()
@@ -453,7 +512,7 @@ def main():
     country_dict = get_country_names()
     regions, region_countries, region_countries_names = get_regions()
     # get_means(regions, region_countries, region_countries_names, ssp="ssp370", year=2015)
-    map_2015()
+    map_delta()
 
 
 if __name__ == "__main__":
