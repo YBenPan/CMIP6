@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from decomposition import multi_year_mort, init_by_factor, get_country_names
-from regions import *
+from plots.lib.regions import *
 
 ####################################################################################################
 #### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
