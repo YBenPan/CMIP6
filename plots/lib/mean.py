@@ -11,8 +11,11 @@ from lib.map import get_countries_mask, get_grid_area, get_pop
 pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 
-def mean(ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop):
+def mean(ssp, year, fractionCountries):
     """Compute the mean PM2.5 concentration, given SSP, year, and countries fractions"""
+    grid_area, tot_area = get_grid_area(fractionCountries)
+    pop, tot_pop = get_pop(fractionCountries)
+
     all_conc = []  # Unweighted mean
     all_awm = []  # Area weighted mean
     all_pwm = []  # Population weighted mean

@@ -12,6 +12,7 @@ import cartopy
 from lib.country import get_country_names, get_regions
 from lib.map import get_countries_mask, get_grid_area, get_pop
 from lib.mean import mean, get_means, output_means
+from lib.helper import pct_change
 
 # ssps = ["ssp119", "ssp126", "ssp245", "ssp370", "ssp434", "ssp460", "ssp585"]
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
@@ -19,6 +20,10 @@ years = [2015, 2020, 2030, 2040]
 pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
 latitude = np.arange(-89.75, 90.25, 0.5)
 longitude = np.arange(0.25, 360.25, 0.5)
+
+# Get countries and regions
+country_dict = get_country_names()
+regions, region_countries, region_countries_names = get_regions()
 
 
 def line(region, countries, countries_names):
@@ -43,7 +48,7 @@ def line(region, countries, countries_names):
         for j, year in enumerate(years):
             models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
             all_conc, all_awm, all_pwm = mean(
-                models, ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
+                models, ssp, year, fractionCountries
             )
 
             # Multi-model mean
@@ -162,7 +167,7 @@ def map(region, countries, countries_names):
             # models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
 
             all_conc, all_awm, all_pwm = mean(
-                ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
+                ssp, year, fractionCountries
             )
 
             ax_i = j // 2
@@ -239,7 +244,7 @@ def map_2015(countries=None):
     for i, ssp in enumerate(ssps):
 
         all_conc, all_awm, all_pwm = mean(
-            ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
+            ssp, year, fractionCountries
         )
         conc.append(all_conc)
     
@@ -267,20 +272,14 @@ def map_2015(countries=None):
     plt.close(fig)
 
 
-def map_delta(countries=None):
+def map_delta():
     """Driver program for delta PM2.5 map plots"""
     # Get country mask
-    fractionCountries = get_countries_mask(countries=countries)
-
-    # Get grid areas for area weighted mean
-    grid_area, tot_area = get_grid_area(fractionCountries)
-
-    # Get population for population weighted mean
-    pop, tot_pop = get_pop(fractionCountries)
+    fractionCountries = get_countries_mask(countries=None)
 
     fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
     fig.set_size_inches(18, 8)
-    fig.suptitle(f"Change in PM2.5 concentration")
+    fig.suptitle(f"Change in PM2.5 concentration from 2015 to 2040")
 
     bounds = [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
     cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
@@ -289,17 +288,37 @@ def map_delta(countries=None):
     vmax = 300
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
+    data = np.zeros((len(regions) + 1, len(ssps)))
+
     for i, ssp in enumerate(ssps):
         
+        print(ssp)
+
+        for j, (region, countries, countries_names) in enumerate(zip(regions, region_countries, region_countries_names)):
+    
+            fractionRegion = get_countries_mask(countries=countries)
+            conc_2015, awm_2015, pwm_2015 = mean(
+                ssp, "2015", fractionRegion
+            )
+            conc_2040, awm_2040, pwm_2040 = mean(
+                ssp, "2040", fractionRegion
+            )
+            data[j, i] = pct_change(pwm_2015, pwm_2040)
+            print(f"{region}: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
+        
         conc_2015, awm_2015, pwm_2015 = mean(
-            ssp, "2015", fractionCountries, grid_area, tot_area, pop, tot_pop
+            ssp, "2015", fractionCountries
         )
         conc_2040, awm_2040, pwm_2040 = mean(
-            ssp, "2040", fractionCountries, grid_area, tot_area, pop, tot_pop
+            ssp, "2040", fractionCountries
         )
 
         conc = (conc_2040 - conc_2015) / conc_2015 * 100
-        
+        print(ssp, "2015 Global:", np.round(awm_2015, 1), np.round(pwm_2015, 1))
+        print(ssp, "2040 Global:", np.round(awm_2040, 1), np.round(pwm_2040, 1))
+        data[-1, i] = pct_change(pwm_2015, pwm_2040)
+        print(f"World: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
+             
         ax_i = i // 2
         ax_j = i % 2
         ax = axes[ax_i, ax_j]
@@ -314,6 +333,14 @@ def map_delta(countries=None):
 
     output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
     os.makedirs(output_dir, exist_ok=True)
+
+    # Output csv
+    output_file = os.path.join(output_dir, "pct_change.csv")
+    print(len([*regions, "World"]))
+    df = pd.DataFrame(data, index=[*regions, "World"], columns=ssps)
+    df.to_csv(output_file)
+
+    # Add color bar
     cbar = fig.colorbar(
         matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
         ax=axes.ravel().tolist(),
@@ -322,17 +349,17 @@ def map_delta(countries=None):
         shrink=0.9,
     )
     cbar.set_label("Percent Change in Concentration")
-    plt.savefig(f"{output_dir}/Delta.png")
+
+    # Output figure
+    output_file = os.path.join(output_dir, "Delta.png")
+    plt.savefig(output_file)
     plt.close(fig)
         
         
 def main():
     # line()
     # map()
-    # Get countries and regions
-    country_dict = get_country_names()
-    regions, region_countries, region_countries_names = get_regions()
-    output_means(regions, region_countries, region_countries)
+    # output_means(regions, region_countries, region_countries)
     map_delta()
 
 
