@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from decomposition import multi_year_mort, init_by_factor, get_country_names
-from plots.lib.regions import *
-from plots.lib.helper import pop_ssp_dict
+from decomposition import multi_year_mort
+from lib.country import get_country_names
+from lib.regions import *
+from lib.helper import pop_ssp_dict, init_by_factor
 
 ####################################################################################################
 #### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
@@ -128,18 +129,43 @@ def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region
 
 
 def main():
-    for (region, countries, countries_names) in zip(
-        regions, region_countries, region_countries_names
-    ):
-        diseases_stacked(
-            factor_name="Disease",
-            factors=diseases,
+    # for (region, countries, countries_names) in zip(
+    #     regions, region_countries, region_countries_names
+    # ):
+    #     diseases_stacked(
+    #         factor_name="Disease",
+    #         factors=diseases,
+    #         pop="var",
+    #         baseline="2040",
+    #         countries=countries,
+    #         region=region,
+    #     )
+    #
+    # Get 2015 global mortality numbers
+    all_means = []
+    for ssp in ssps:
+        mort_mean, std = multi_year_mort(
+            pop="2010",
+            baseline="2015",
+            year=2015,
+            ssp=ssp,
+        )
+        all_means.append(mort_mean)
+        print(mort_mean, std)
+    print(np.mean(all_means))
+
+    # Get 2040 globall mortality numbers
+    all_means = []
+    for ssp in ssps:
+        mort_mean, std = multi_year_mort(
             pop="var",
             baseline="2040",
-            countries=countries,
-            region=region,
+            year=2040,
+            ssp=ssp,
         )
-
+        all_means.append(mort_mean)
+        print(mort_mean, std)
+    print(np.mean(all_means))
 
 if __name__ == "__main__":
     main()
