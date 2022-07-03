@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from lib.country import get_country_names, get_regions
 from lib.regions import *
+from lib.helper import pop_ssp_dict
 
 ####################################################################################################
 #### CREATE DECOMPOSITION GRAPHS OF MORTALITY
@@ -15,16 +16,6 @@ from lib.regions import *
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 home_dir = "/home/ybenp"
 output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
-pop_ssp_dict = {
-    "ssp119": "ssp1",
-    "ssp126": "ssp1",
-    "ssp245": "ssp2",
-    "ssp370": "ssp3",
-    "ssp434": "ssp2",
-    "ssp460": "ssp2",
-    "ssp585": "ssp1",
-}
-
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]

@@ -11,6 +11,7 @@ from lib.map import get_countries_mask, get_grid_area, get_pop
 pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 
+
 def mean(ssp, year, fractionCountries):
     """Compute the mean PM2.5 concentration, given SSP, year, and countries fractions"""
     grid_area, tot_area = get_grid_area(fractionCountries)
@@ -88,8 +89,8 @@ def get_means(regions, region_countries, region_countries_names, ssp, year):
     """Return mean values of input regions"""
     awms = np.zeros(len(regions))
     pwms = np.zeros(len(regions))
-    for i, (region, countries, countries_names) in enumerate(zip(
-        regions, region_countries, region_countries_names)
+    for i, (region, countries, countries_names) in enumerate(
+        zip(regions, region_countries, region_countries_names)
     ):
         # Get country mask
         fractionCountries = get_countries_mask(countries=countries)
@@ -112,15 +113,17 @@ def output_means(regions, region_countries, region_countries_names):
     awms = []
     pwms = []
     for ssp in ssps:
-        awm, pwm = get_means(regions, region_countries, region_countries_names, ssp=ssp, year=2015)
+        awm, pwm = get_means(
+            regions, region_countries, region_countries_names, ssp=ssp, year=2015
+        )
         awms.append(awm)
         pwms.append(pwm)
     awms = np.mean(awms, axis=0)
     pwms = np.mean(pwms, axis=0)
-    
+
     output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
     output_file = os.path.join(output_dir, "2015_mean.csv")
-    with open(output_file, "w") as csvfile: 
+    with open(output_file, "w") as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(["Region Name", "AWM", "PWM"])
         for i, region in enumerate(regions):

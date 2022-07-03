@@ -18,7 +18,7 @@ def get_country_names():
     country_dict = dict(zip(country_names, country_ids))
     return country_dict
 
-    
+
 def get_regions():
     """Return a list of regions with their country IDs and names"""
     country_dict = get_country_names()
@@ -44,7 +44,7 @@ def get_regions():
         "E. Africa": Eastern_Sub_Saharan_Africa,
         "S. Africa": Southern_Sub_Saharan_Africa,
         "W. Africa": Western_Sub_Saharan_Africa,
-        "World": ["World"],
+        # "World": ["World"],
     }
     region_countries_names = list(region_countries_dict.values())
     regions = list(region_countries_dict.keys())

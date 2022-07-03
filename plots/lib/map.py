@@ -1,6 +1,8 @@
 from netCDF4 import Dataset
 import numpy as np
 import math
+from lib.helper import pop_ssp_dict
+
 
 def get_countries_mask(
     base_path="/home/ybenp/CMIP6_data/population/national_pop/",

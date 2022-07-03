@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from decomposition import multi_year_mort, init_by_factor, get_country_names
 from plots.lib.regions import *
+from plots.lib.helper import pop_ssp_dict
 
 ####################################################################################################
 #### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
@@ -14,15 +15,6 @@ from plots.lib.regions import *
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 output_dir = "/home/ybenp/CMIP6_Images/Mortality/global_mort"
-pop_ssp_dict = {
-    "ssp119": "ssp1",
-    "ssp126": "ssp1",
-    "ssp245": "ssp2",
-    "ssp370": "ssp3",
-    "ssp434": "ssp2",
-    "ssp460": "ssp2",
-    "ssp585": "ssp1",
-}
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
@@ -38,32 +30,29 @@ region_countries_dict = {
     "E. Europe": Eastern_Europe,
     "Canada, US": High_income_North_America,
     "Australia, New Zealand": Australasia,
-
     "Caribbean": Caribbean,
     "Central America": Central_Latin_America,
     "Argentina, Chile, Uruguay": Southern_Latin_America,
     "Brazil, Paraguay": Tropical_Latin_America,
     "Bolivia, Ecuador, Peru": Andean_Latin_America,
-
     "Central Asia": Central_Asia,
     "South Asia": South_Asia,
     "East Asia": East_Asia,
     "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
     "S.E. Asia": Southeast_Asia,
-
     "N. Africa and Middle East": North_Africa_and_Middle_East,
     "Central Africa": Central_Sub_Saharan_Africa,
     "E. Africa": Eastern_Sub_Saharan_Africa,
     "S. Africa": Southern_Sub_Saharan_Africa,
     "W. Africa": Western_Sub_Saharan_Africa,
-
     "World": ["World"],
 }
 country_dict = get_country_names()
 region_countries_names = list(region_countries_dict.values())
 regions = list(region_countries_dict.keys())
 region_countries = [
-    [country_dict[country_name] for country_name in countries_names] for countries_names in region_countries_names
+    [country_dict[country_name] for country_name in countries_names]
+    for countries_names in region_countries_names
 ]
 assert len(regions) == len(region_countries) == len(region_countries_names)
 
@@ -103,7 +92,9 @@ def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region
                     },
                     ignore_index=True,
                 )
-                print(f"Region {region}. {year}, {ssp}, {pop}, {baseline}, {factor} mean: {factor_mean}; STD: {std}")
+                print(
+                    f"Region {region}. {year}, {ssp}, {pop}, {baseline}, {factor} mean: {factor_mean}; STD: {std}"
+                )
             xlabels.append(f"{year}, {ssp}")
 
     sns.set()
@@ -137,10 +128,17 @@ def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region
 
 
 def main():
-    for (region, countries, countries_names) in zip(regions, region_countries, region_countries_names):   
-        diseases_stacked(factor_name="Disease", factors=diseases, pop="var", baseline="2040", countries=countries,
-                         region=region)
-
+    for (region, countries, countries_names) in zip(
+        regions, region_countries, region_countries_names
+    ):
+        diseases_stacked(
+            factor_name="Disease",
+            factors=diseases,
+            pop="var",
+            baseline="2040",
+            countries=countries,
+            region=region,
+        )
 
 
 if __name__ == "__main__":
