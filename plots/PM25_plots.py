@@ -188,8 +188,8 @@ def map(region, countries, countries_names):
                 norm=norm,
             )
             ax.add_feature(cartopy.feature.OCEAN)
-            ax.add_feature(cartopy.feature.COASTLINE)
-            ax.add_feature(cartopy.feature.BORDERS)
+            ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
+            ax.add_feature(cartopy.feature.BORDERS, linewidth=0.5)
 
             # extent=[-180, -60, 15, 70]
 
@@ -254,8 +254,8 @@ def map_2015(countries=None):
         longitude, latitude, conc, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
     )
     ax.add_feature(cartopy.feature.OCEAN)
-    ax.add_feature(cartopy.feature.COASTLINE)
-    ax.add_feature(cartopy.feature.BORDERS)
+    ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cartopy.feature.BORDERS, linewidth=0.5)
     ax.coastlines(resolution="10m")
 
     output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
@@ -288,7 +288,7 @@ def map_delta():
     vmax = 300
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
-    data = np.zeros((len(regions) + 1, len(ssps)))
+    data = np.zeros((len(regions), len(ssps)))
 
     for i, ssp in enumerate(ssps):
         
@@ -327,15 +327,15 @@ def map_delta():
             longitude, latitude, conc, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
         )
         ax.add_feature(cartopy.feature.OCEAN)
-        ax.add_feature(cartopy.feature.COASTLINE)
-        ax.add_feature(cartopy.feature.BORDERS)
+        ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
+        ax.add_feature(cartopy.feature.BORDERS, linewidth=0.5)
         ax.set_title(ssp)
 
     output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
     os.makedirs(output_dir, exist_ok=True)
 
     # Output csv
-    output_file = os.path.join(output_dir, "pct_change_ssp.csv")
+    output_file = os.path.join(output_dir, "pct_change.csv")
     df = pd.DataFrame(data, index=[*regions, "World"], columns=ssps)
     df.to_csv(output_file)
 

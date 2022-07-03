@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from lib.country import get_country_names, get_regions
 from lib.regions import *
-from lib.helper import pop_ssp_dict
+from lib.helper import pop_ssp_dict, init_by_factor
 
 ####################################################################################################
 #### CREATE DECOMPOSITION GRAPHS OF MORTALITY
@@ -81,6 +81,7 @@ def mort(
         countries = [-1]
     ages = ["all_age_Mean"] if ages is None else ages
     disease = "Allcause" if disease is None else disease
+    year = str(year)
     models = get_models(ssp)
     factor_values = []
     pop_ssp = pop_ssp_dict[ssp]
@@ -133,47 +134,6 @@ def multi_year_mort(
     return mort_mean, std
 
 
-def init_by_factor(factor_name, factor):
-    """Initialize ages and diseases array based on the variable in question"""
-    if factor_name == "Age":
-        if factor == "25-60":
-            ages = [
-                "age_25_29_Mean",
-                "age_30_34_Mean",
-                "age_35_39_Mean",
-                "age_40_44_Mean",
-                "age_45_49_Mean",
-                "age_50_54_Mean",
-                "age_55_59_Mean",
-            ]
-        elif factor == "60-80":
-            ages = [
-                "age_60_64_Mean",
-                "age_65_69_Mean",
-                "age_70_74_Mean",
-                "age_75_79_Mean",
-            ]
-        elif factor == "80+":
-            ages = [
-                "age_80_84_Mean",
-                "age_85_89_Mean",
-                "age_90_94_Mean",
-                "post95_Mean",
-            ]
-        elif factor == "25+":
-            ages = ["all_age_Mean"]
-        else:
-            raise NameError(f"{factor} ages group not found!")
-        disease = None
-    elif factor_name == "Disease":
-        ages = None
-        disease = factor
-    else:
-        ages = None
-        disease = None
-    return ages, disease
-
-
 def decompose(factor_name, factors, ssp, region, countries):
     """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
     pms = []
@@ -187,7 +147,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         ref = mort(
             pop="2010",
             baseline="2015",
-            year="2015",
+            year=2015,
             ssp=ssp,
             ages=ages,
             disease=disease,
@@ -196,7 +156,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         delta = mort(
             pop="var",
             baseline="2040",
-            year="2040",
+            year=2040,
             ssp=ssp,
             ages=ages,
             disease=disease,
@@ -204,7 +164,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         ) - mort(
             pop="2010",
             baseline="2015",
-            year="2015",
+            year=2015,
             ssp=ssp,
             ages=ages,
             disease=disease,
@@ -218,7 +178,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         pm_contribution = mort(
             pop="2010",
             baseline="2015",
-            year="2040",
+            year=2040,
             ssp=ssp,
             ages=ages,
             disease=disease,
@@ -226,7 +186,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         ) - mort(
             pop="2010",
             baseline="2015",
-            year="2015",
+            year=2015,
             ages=ages,
             ssp=ssp,
             disease=disease,
@@ -235,7 +195,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         baseline_contribution = mort(
             pop="2010",
             baseline="2040",
-            year="2040",
+            year=2040,
             ages=ages,
             ssp=ssp,
             disease=disease,
@@ -243,7 +203,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         ) - mort(
             pop="2010",
             baseline="2015",
-            year="2040",
+            year=2040,
             ages=ages,
             ssp=ssp,
             disease=disease,
@@ -252,7 +212,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         pop_contribution = mort(
             pop="var",
             baseline="2040",
-            year="2040",
+            year=2040,
             ages=ages,
             ssp=ssp,
             disease=disease,
@@ -260,7 +220,7 @@ def decompose(factor_name, factors, ssp, region, countries):
         ) - mort(
             pop="2010",
             baseline="2040",
-            year="2040",
+            year=2040,
             ages=ages,
             ssp=ssp,
             disease=disease,
