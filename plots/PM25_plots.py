@@ -335,8 +335,7 @@ def map_delta():
     os.makedirs(output_dir, exist_ok=True)
 
     # Output csv
-    output_file = os.path.join(output_dir, "pct_change.csv")
-    print(len([*regions, "World"]))
+    output_file = os.path.join(output_dir, "pct_change_ssp.csv")
     df = pd.DataFrame(data, index=[*regions, "World"], columns=ssps)
     df.to_csv(output_file)
 

@@ -1,6 +1,7 @@
 from netCDF4 import Dataset
 import numpy as np
 import math
+import os
 from lib.helper import pop_ssp_dict
 
 
@@ -84,10 +85,13 @@ def get_grid_area(fractionCountries=np.ones((360, 720))):
     return grid_areas, tot_area
 
 
-def get_pop(fractionCountries=np.ones((360, 720))):
+def get_pop(ssp="ssp245", year="2015", fractionCountries=np.ones((360, 720))):
     """Return the population of the grids of a mask and its total population"""
-    pop_path = "/home/ybenp/CMIP6_data/population/gridded_pop/ssp1"
-    pop_file = f"{pop_path}/ssp1_tot_2020.nc"
+    pop_path = "/home/ybenp/CMIP6_data/population/gridded_pop"
+    pop_ssp = pop_ssp_dict[ssp]
+    pop_year = str(int(year) // 10 * 10)
+    pop_file = os.path.join(pop_path, pop_ssp, f"{pop_ssp}_tot_{pop_year}.nc")
+    
     f1 = Dataset(pop_file, "r")
     pop = f1["population"][:] * fractionCountries
     tot_pop = np.sum(pop)

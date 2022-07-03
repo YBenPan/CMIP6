@@ -15,7 +15,7 @@ ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 def mean(ssp, year, fractionCountries):
     """Compute the mean PM2.5 concentration, given SSP, year, and countries fractions"""
     grid_area, tot_area = get_grid_area(fractionCountries)
-    pop, tot_pop = get_pop(fractionCountries)
+    pop, tot_pop = get_pop(ssp, year, fractionCountries)
 
     all_conc = []  # Unweighted mean
     all_awm = []  # Area weighted mean
@@ -99,7 +99,7 @@ def get_means(regions, region_countries, region_countries_names, ssp, year):
         grid_area, tot_area = get_grid_area(fractionCountries)
 
         # Get population for population weighted mean
-        pop, tot_pop = get_pop(fractionCountries)
+        pop, tot_pop = get_pop(ssp, year, fractionCountries)
         conc, awm, pwm = mean(
             ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
         )
