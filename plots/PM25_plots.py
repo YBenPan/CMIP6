@@ -298,19 +298,19 @@ def map_delta():
     
             fractionRegion = get_countries_mask(countries=countries)
             conc_2015, awm_2015, pwm_2015 = mean(
-                ssp, "2015", fractionRegion
+                ssp, 2015, fractionRegion
             )
             conc_2040, awm_2040, pwm_2040 = mean(
-                ssp, "2040", fractionRegion
+                ssp, 2040, fractionRegion
             )
             data[j, i] = pct_change(pwm_2015, pwm_2040)
+            # print(f"{region} PWM 2015: {pwm_2015}, 2040: {pwm_2040}")
             print(f"{region}: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
-        
         conc_2015, awm_2015, pwm_2015 = mean(
-            ssp, "2015", fractionCountries
+            ssp, 2015, fractionCountries
         )
         conc_2040, awm_2040, pwm_2040 = mean(
-            ssp, "2040", fractionCountries
+            ssp, 2040, fractionCountries
         )
 
         conc = (conc_2040 - conc_2015) / conc_2015 * 100
@@ -336,7 +336,7 @@ def map_delta():
 
     # Output csv
     output_file = os.path.join(output_dir, "pct_change.csv")
-    df = pd.DataFrame(data, index=[*regions, "World"], columns=ssps)
+    df = pd.DataFrame(data, index=regions, columns=ssps)
     df.to_csv(output_file)
 
     # Add color bar
@@ -358,7 +358,7 @@ def map_delta():
 def main():
     # line()
     # map()
-    # output_means(regions, region_countries, region_countries)
+    output_means(regions, region_countries, region_countries_names)
     map_delta()
 
 

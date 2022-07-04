@@ -101,7 +101,7 @@ def get_means(regions, region_countries, region_countries_names, ssp, year):
         # Get population for population weighted mean
         pop, tot_pop = get_pop(ssp, year, fractionCountries)
         conc, awm, pwm = mean(
-            ssp, year, fractionCountries, grid_area, tot_area, pop, tot_pop
+            ssp, year, fractionCountries
         )
         # print(f"{ssp} Region {region} has AWM {awm}, PWM {pwm}")
         awms[i] = awm
