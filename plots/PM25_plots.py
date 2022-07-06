@@ -269,23 +269,27 @@ def map_year(year, countries=None, type="Concentration"):
     plt.close(fig)
 
 
-def map_delta():
+def map_delta(type="Concentration"):
     """Driver program for delta PM2.5 map plots"""
     # Get country mask
     fractionCountries = get_countries_mask(countries=None)
 
     fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
     fig.set_size_inches(18, 8)
-    fig.suptitle(f"Change in PM2.5 concentration from 2015 to 2040")
+    fig.suptitle(f"Change in PM2.5 {type} from 2015 to 2040")
 
-    bounds = [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+    if type == "Concentration":
+        bounds = [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+        vmax = 50
+    elif type == "Exposure":
+        bounds = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
+        vmax = 100
     cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
 
     vmin = -100
-    vmax = 300
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
-    data = np.zeros((len(regions), len(ssps)))
+    pct_change_data = np.zeros((len(regions), len(ssps)))
 
     for i, ssp in enumerate(ssps):
 
@@ -298,16 +302,27 @@ def map_delta():
             fractionRegion = get_countries_mask(countries=countries)
             conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionRegion)
             conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionRegion)
-            data[j, i] = pct_change(pwm_2015, pwm_2040)
-            # print(f"{region} PWM 2015: {pwm_2015}, 2040: {pwm_2040}")
+            pct_change_data[j, i] = pct_change(pwm_2015, pwm_2040)
             print(f"{region}: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
+            
         conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionCountries)
         conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionCountries)
+        conc = (conc_2040 - conc_2015) / conc_2015 * 100       
 
-        conc = (conc_2040 - conc_2015) / conc_2015 * 100
+        pop_2015, tot_pop_2015 = get_pop(ssp, 2015, fractionCountries)
+        pop_2040, tot_pop_2040 = get_pop(ssp, 2040, fractionCountries)
+        exposure_2015 = conc_2015 * pop_2015
+        exposure_2040 = conc_2040 * pop_2040
+        exposure = (exposure_2040 - exposure_2015) / exposure_2015 * 100
+
+        if type == "Exposure":
+            data = exposure      
+        elif type == "Concentration":
+            data = conc
+        
         print(ssp, "2015 Global:", np.round(awm_2015, 1), np.round(pwm_2015, 1))
         print(ssp, "2040 Global:", np.round(awm_2040, 1), np.round(pwm_2040, 1))
-        data[-1, i] = pct_change(pwm_2015, pwm_2040)
+        pct_change_data[-1, i] = pct_change(pwm_2015, pwm_2040)
         print(f"World: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
 
         ax_i = i // 2
@@ -315,7 +330,7 @@ def map_delta():
         ax = axes[ax_i, ax_j]
 
         ax.pcolormesh(
-            longitude, latitude, conc, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
+            longitude, latitude, data, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
         )
         ax.add_feature(cartopy.feature.OCEAN)
         ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
@@ -326,9 +341,10 @@ def map_delta():
     os.makedirs(output_dir, exist_ok=True)
 
     # Output csv
-    output_file = os.path.join(output_dir, "pct_change.csv")
-    df = pd.DataFrame(data, index=regions, columns=ssps)
-    df.to_csv(output_file)
+    if type == "Concentration":
+        output_file = os.path.join(output_dir, f"pct_change.csv")
+        df = pd.DataFrame(pct_change_data, index=regions, columns=ssps)
+        df.to_csv(output_file)
 
     # Add color bar
     cbar = fig.colorbar(
@@ -338,10 +354,10 @@ def map_delta():
         spacing="proportional",
         shrink=0.9,
     )
-    cbar.set_label("Percent Change in Concentration")
+    cbar.set_label(f"Percent Change in {type}")
 
     # Output figure
-    output_file = os.path.join(output_dir, "Delta.png")
+    output_file = os.path.join(output_dir, f"Delta_{type}.png")
     plt.savefig(output_file)
     plt.close(fig)
 
@@ -350,8 +366,8 @@ def main():
     # line()
     # map()
     # output_means(regions, region_countries, region_countries_names)
-    map_year(year=2015, type="Exposure")
-    # map_delta()
+    # map_year(year=2015, type="Exposure")
+    map_delta(type="Exposure")
 
 
 if __name__ == "__main__":
