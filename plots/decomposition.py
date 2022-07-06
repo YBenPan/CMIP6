@@ -317,8 +317,10 @@ def visualize():
             ax.set_title(region)
             ax.set_ylabel("")
             ax.set_xlabel(factor_name)
-            ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
             ax.set_yticklabels(["-100%", "0%", "100%", "200%", "300%", "400%"])
+
+            if factor_name == "SSP":
+                ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
 
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
@@ -335,14 +337,14 @@ def visualize():
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
         output_file = (
-            f"{output_dir}/{factor_name}{ssp + '_' if factor_name != 'SSP' else ''}.png"
+            f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}.png"
         )
         plt.savefig(output_file)
         if factor_name == "SSP":
             break
-        # output_file = os.path.join(output_dir, f"{factor_name}_{ssp}.csv")
-        # overall_df = overall_df.reset_index(drop=True)
-        # overall_df.to_csv(output_file, index=False)
+        output_file = os.path.join(output_dir, f"{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}.csv")
+        overall_df = overall_df.reset_index(drop=True)
+        overall_df.to_csv(output_file, index=False)
 
 
 def main():
