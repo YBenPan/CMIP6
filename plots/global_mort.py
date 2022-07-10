@@ -1,13 +1,18 @@
 import os
 from glob import glob
+import matplotlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import cartopy.crs as ccrs
+import cartopy
 from decomposition import multi_year_mort
-from lib.country import get_country_names
+from lib.country import get_country_names, get_regions
 from lib.regions import *
 from lib.helper import pop_ssp_dict, init_by_factor
+from lib.mean import mean
+from lib.map import get_countries_mask
 
 ####################################################################################################
 #### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
@@ -22,41 +27,12 @@ ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 years = [2015, 2020, 2030, 2040]
 diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+"]
-
+latitude = np.arange(-89.75, 90.25, 0.5)
+longitude = np.arange(0.25, 360.25, 0.5)
 
 # Custom region settings
-region_countries_dict = {
-    "W. Europe": Western_Europe,
-    "Central Europe": Central_Europe,
-    "E. Europe": Eastern_Europe,
-    "Canada, US": High_income_North_America,
-    "Australia, New Zealand": Australasia,
-    "Caribbean": Caribbean,
-    "Central America": Central_Latin_America,
-    "Argentina, Chile, Uruguay": Southern_Latin_America,
-    "Brazil, Paraguay": Tropical_Latin_America,
-    "Bolivia, Ecuador, Peru": Andean_Latin_America,
-    "Central Asia": Central_Asia,
-    "South Asia": South_Asia,
-    "East Asia": East_Asia,
-    "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
-    "S.E. Asia": Southeast_Asia,
-    "N. Africa and Middle East": North_Africa_and_Middle_East,
-    "Central Africa": Central_Sub_Saharan_Africa,
-    "E. Africa": Eastern_Sub_Saharan_Africa,
-    "S. Africa": Southern_Sub_Saharan_Africa,
-    "W. Africa": Western_Sub_Saharan_Africa,
-    "World": ["World"],
-}
 country_dict = get_country_names()
-region_countries_names = list(region_countries_dict.values())
-regions = list(region_countries_dict.keys())
-region_countries = [
-    [country_dict[country_name] for country_name in countries_names]
-    for countries_names in region_countries_names
-]
-assert len(regions) == len(region_countries) == len(region_countries_names)
-
+regions, region_countries, region_countries_names = get_regions()
 
 def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region=None):
     if countries == None:
@@ -128,6 +104,53 @@ def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region
     plt.close(fig)
 
 
+def map_year(year, countries=None):
+    """Driver program for map plots of mortality in a specific year"""
+    # Get country mask
+    fractionCountries = get_countries_mask(countries=countries)
+
+    sns.set()
+    bounds = [0, 100, 200, 300, 400, 500, 1000, 1500, 2000, 3000, 4000]
+    bounds = [x / 2 for x in bounds]
+    vmin = bounds[0]
+    vmax = bounds[-1]
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(18, 8)
+    fig.suptitle(f"PM2.5 attributable mortality in {year}")
+
+    all_data = []
+    for i, ssp in enumerate(ssps):
+        
+        mort, awm, pwm = mean(ssp, year, fractionCountries, type="Mortality")
+        data = mort
+        all_data.append(data)
+
+    all_data = np.mean(all_data, axis=0)
+
+    ax.pcolormesh(longitude, latitude, data, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm)
+    ax.add_feature(cartopy.feature.OCEAN)
+    ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cartopy.feature.BORDERS, linewidth=0.5)
+    ax.coastlines(resolution="10m")
+
+    output_dir = "/home/ybenp/CMIP6_Images/Mortality/"
+    os.makedirs(output_dir, exist_ok=True)
+    cbar = fig.colorbar(
+        matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
+        ax=ax,
+        ticks=bounds,
+        spacing="proportional",
+        shrink=0.9,
+    )
+    cbar_label = "Mortality"
+    cbar.set_label(cbar_label)
+    plt.savefig(os.path.join(output_dir, "map", f"World_{year}.png"))
+    plt.close(fig)   
+
+
 def main():
     # for (region, countries, countries_names) in zip(
     #     regions, region_countries, region_countries_names
@@ -141,31 +164,34 @@ def main():
     #         region=region,
     #     )
     #
-    # Get 2015 global mortality numbers
-    all_means = []
-    for ssp in ssps:
-        mort_mean, std = multi_year_mort(
-            pop="2010",
-            baseline="2015",
-            year=2015,
-            ssp=ssp,
-        )
-        all_means.append(mort_mean)
-        print(mort_mean, std)
-    print(np.mean(all_means))
+    # # Get 2015 global mortality numbers
+    # all_means = []
+    # for ssp in ssps:
+    #     mort_mean, std = multi_year_mort(
+    #         pop="2010",
+    #         baseline="2015",
+    #         year=2015,
+    #         ssp=ssp,
+    #     )
+    #     all_means.append(mort_mean)
+    #     print(mort_mean, std)
+    # print(np.mean(all_means))
 
-    # Get 2040 globall mortality numbers
-    all_means = []
-    for ssp in ssps:
-        mort_mean, std = multi_year_mort(
-            pop="var",
-            baseline="2040",
-            year=2040,
-            ssp=ssp,
-        )
-        all_means.append(mort_mean)
-        print(mort_mean, std)
-    print(np.mean(all_means))
+    # # Get 2040 globall mortality numbers
+    # all_means = []
+    # for ssp in ssps:
+    #     mort_mean, std = multi_year_mort(
+    #         pop="var",
+    #         baseline="2040",
+    #         year=2040,
+    #         ssp=ssp,
+    #     )
+    #     all_means.append(mort_mean)
+    #     print(mort_mean, std)
+    # print(np.mean(all_means))
+
+    map_year(year=2015)
+
 
 if __name__ == "__main__":
     main()
