@@ -48,7 +48,7 @@ def line(region, countries, countries_names):
 
         for j, year in enumerate(years):
             models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
-            all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountries)
+            all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountries, type="PM2.5 Concentration")
 
             # Multi-model mean
             print(
@@ -165,7 +165,7 @@ def map(region, countries, countries_names):
         for j, year in enumerate(years):
             # models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
 
-            all_conc, all_awm, all_pwm = mean(ssp, year, fractionCountries)
+            all_conc, all_awm, all_pwm = mean(ssp, year, fractionCountries, type="PM2.5 Concentration")
 
             ax_i = j // 2
             ax_j = j % 2
@@ -207,21 +207,20 @@ def map(region, countries, countries_names):
 
 
 def map_year(year, countries=None, type="Concentration"):
-    """Driver program for map plots in a specific year"""
+    """Driver program for map plots of PM2.5 in a specific year"""
     # Get country mask
     fractionCountries = get_countries_mask(countries=countries)
 
     sns.set()
 
     if type == "Concentration":
-        bounds = [0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 40, 50, 60]
-        vmax = 60
+        # bounds = [0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 40, 50, 60]
+        bounds = [0.1, 0.3, 0.5, 0.75, 1, 3, 5, 7.5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
     elif type == "Exposure":
         bounds = [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40]
-        vmax = 40
-    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
-
     vmin = 0
+    vmax = bounds[-1]
+    cmap = matplotlib.cm.get_cmap("YlGnBu", lut=len(bounds) + 1)
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
     # pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
@@ -233,7 +232,7 @@ def map_year(year, countries=None, type="Concentration"):
 
     for i, ssp in enumerate(ssps):
 
-        conc, awm, pwm = mean(ssp, year, fractionCountries)
+        conc, awm, pwm = mean(ssp, year, fractionCountries, type="PM2.5 Concentration")
         
         if type == "Exposure": 
             pop, tot_pop = get_pop(ssp, year, fractionCountries)
@@ -256,16 +255,16 @@ def map_year(year, countries=None, type="Concentration"):
     cbar = fig.colorbar(
         matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
         ax=ax,
-        ticks=bounds,
-        spacing="proportional",
+        ticks=bounds[::2],
+        spacing="uniform",
         shrink=0.9,
     )
     if type == "Concentration":
-        cbar_label = f"Concentration (μg / m^3)"
+        cbar_label = "Concentration (μg / m^3)"
     elif type == "Exposure":
-        cbar_label = f"Exposure (μg * 10^6 people / m^3)"
+        cbar_label = "Exposure (μg * 10^6 people / m^3)"
     cbar.set_label(cbar_label)
-    plt.savefig(f"{output_dir}/World_{type}_{year}.png")
+    plt.savefig(f"{output_dir}/World_{type}_{year}_Turnock.png")
     plt.close(fig)
 
 
@@ -300,13 +299,13 @@ def map_delta(type="Concentration"):
         ):
 
             fractionRegion = get_countries_mask(countries=countries)
-            conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionRegion)
-            conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionRegion)
+            conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionRegion, type="PM2.5 Concentration")
+            conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionRegion, type="PM2.5 Concentration")
             pct_change_data[j, i] = pct_change(pwm_2015, pwm_2040)
             print(f"{region}: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
             
-        conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionCountries)
-        conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionCountries)
+        conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionCountries, type="PM2.5 Concentration")
+        conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionCountries, type="PM2.5 Concentration")
         conc = (conc_2040 - conc_2015) / conc_2015 * 100       
 
         pop_2015, tot_pop_2015 = get_pop(ssp, 2015, fractionCountries)
@@ -366,7 +365,7 @@ def main():
     # line()
     # map()
     # output_means(regions, region_countries, region_countries_names)
-    # map_year(year=2015, type="Exposure")
+    map_year(year=2015, type="Exposure")
     map_delta(type="Exposure")
 
 

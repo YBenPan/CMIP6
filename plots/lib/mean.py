@@ -7,17 +7,23 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import csv
 from lib.map import get_countries_mask, get_grid_area, get_pop
+from lib.helper import pop_ssp_dict
+
 
 pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
+mort_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 
 
-def mean(ssp, year, fractionCountries):
+def mean(ssp, year, fractionCountries, type):
     """Compute the mean PM2.5 concentration, given SSP, year, and countries fractions"""
+    if type not in ["PM2.5 Concentration", "Mortality"]:
+        raise Exception(f"Unknown type {type}")
     grid_area, tot_area = get_grid_area(fractionCountries)
     pop, tot_pop = get_pop(ssp, year, fractionCountries)
+    pop_ssp = pop_ssp_dict[ssp]
 
-    all_conc = []  # Unweighted mean
+    all_data = []  # Unweighted mean
     all_awm = []  # Area weighted mean
     all_pwm = []  # Population weighted mean
     models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
@@ -33,30 +39,30 @@ def mean(ssp, year, fractionCountries):
         #     continue
 
         # Compute mean PM2.5 concentration of all realizations
-        files = sorted(
-            glob(
-                os.path.join(
-                    pm25_path, ssp, "mmrpm2p5", model, "*", f"annual_avg_{year}.nc"
-                )
-            )
-        )
+        if type == "PM2.5 Concentration":
+            search_str = os.path.join(pm25_path, ssp, "mmrpm2p5", model, "*", f"annual_avg_{year}.nc")
+            files = sorted(glob(search_str))
+        elif type == "Mortality":
+            search_str = os.path.join(mort_path, "Baseline_Ben_2040_National", "5_years", ssp, f"Pop_{pop_ssp}_var", "MortalityAbsolute", "Allcause_mean", f"{model}_*_{year}_GEMM.nc")
+            files = sorted(glob(search_str))
         if len(files) == 0:
-            continue
-        model_conc = []
+            raise Exception(f"{search_str} not found!")
+        model_data = []
         model_awm = []
         model_pwm = []
 
         for file in files:
             # Import concentration NC file
             wk = Dataset(file, "r")
-            conc = wk["concpm2p5"][:]
-
-            # Calculate concentration and means
-            country_conc = (
-                conc * fractionCountries * (10**9)
-            )  # Apply mask to concentration array
-            area_weighted_mean = np.sum(grid_area * country_conc) / tot_area
-            pop_weighted_mean = np.sum(pop * country_conc) / tot_pop
+            if type == "PM2.5 Concentration":
+                data = wk["concpm2p5"][:]
+                country_data = (data * fractionCountries * (10**9))  # Apply mask to concentration array
+            elif type == "Mortality":
+                data = wk["deaths__mean"]
+                country_data = (data * fractionCountries)
+            
+            area_weighted_mean = np.sum(grid_area * country_data) / tot_area
+            pop_weighted_mean = np.sum(pop * country_data) / tot_pop
 
             # Compute mean concentration of every province
             # state_means = np.zeros(len(states))
@@ -66,26 +72,25 @@ def mean(ssp, year, fractionCountries):
             #     state_means[k] = np.sum(state_conc) / state_area
             # all_conc.append(state_means)
 
-            model_conc.append(country_conc)
+            model_data.append(country_data)
             model_awm.append(area_weighted_mean)
             model_pwm.append(pop_weighted_mean)
 
-            # real = file.split("mmrpm2p5/")[1].split("\\annual_avg")[0]
-
-        model_conc = np.mean(model_conc, axis=0)
+        model_data = np.mean(model_data, axis=0)
         model_awm = np.mean(model_awm, axis=0)
         model_pwm = np.mean(model_pwm, axis=0)
-        all_conc.append(model_conc)
+        all_data.append(model_data)
         all_awm.append(model_awm)
         all_pwm.append(model_pwm)
         # print(f"{model}: PWM: {np.round(model_pwm, 2)}, AWM: {np.round(model_awm, 2)}")
-    all_conc = np.mean(all_conc, axis=0)
+
+    all_data = np.mean(all_data, axis=0)
     all_awm = np.mean(all_awm, axis=0)
     all_pwm = np.mean(all_pwm, axis=0)
-    return all_conc, all_awm, all_pwm
+    return all_data, all_awm, all_pwm
 
 
-def get_means(regions, region_countries, region_countries_names, ssp, year):
+def get_means(regions, region_countries, region_countries_names, ssp, year, type):
     """Return mean values of input regions"""
     awms = np.zeros(len(regions))
     pwms = np.zeros(len(regions))
@@ -101,7 +106,7 @@ def get_means(regions, region_countries, region_countries_names, ssp, year):
         # Get population for population weighted mean
         pop, tot_pop = get_pop(ssp, year, fractionCountries)
         conc, awm, pwm = mean(
-            ssp, year, fractionCountries
+            ssp, year, fractionCountries, type
         )
         # print(f"{ssp} Region {region} has AWM {awm}, PWM {pwm}")
         awms[i] = awm
@@ -114,7 +119,7 @@ def output_means(regions, region_countries, region_countries_names):
     pwms = []
     for ssp in ssps:
         awm, pwm = get_means(
-            regions, region_countries, region_countries_names, ssp=ssp, year=2015
+            regions, region_countries, region_countries_names, ssp=ssp, year=2015, type="Concentration"
         )
         awms.append(awm)
         pwms.append(pwm)
