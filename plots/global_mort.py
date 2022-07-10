@@ -10,7 +10,7 @@ import cartopy
 from decomposition import multi_year_mort
 from lib.country import get_country_names, get_regions
 from lib.regions import *
-from lib.helper import pop_ssp_dict, init_by_factor
+from lib.helper import pop_ssp_dict, init_by_factor, pct_change
 from lib.mean import mean
 from lib.map import get_countries_mask
 
@@ -33,6 +33,7 @@ longitude = np.arange(0.25, 360.25, 0.5)
 # Custom region settings
 country_dict = get_country_names()
 regions, region_countries, region_countries_names = get_regions()
+
 
 def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region=None):
     if countries == None:
@@ -123,7 +124,7 @@ def map_year(year, countries=None):
 
     all_data = []
     for i, ssp in enumerate(ssps):
-        
+
         mort, awm, pwm = mean(ssp, year, fractionCountries, type="Mortality")
         data = mort
         all_data.append(data)
@@ -148,7 +149,94 @@ def map_year(year, countries=None):
     cbar_label = "Mortality"
     cbar.set_label(cbar_label)
     plt.savefig(os.path.join(output_dir, "map", f"World_{year}.png"))
-    plt.close(fig)   
+    plt.close(fig)
+
+
+def map_delta():
+    """Driver program for delta mortality map plots"""
+    # Get country mask
+    fractionCountries = get_countries_mask(countries=None)
+
+    fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(18, 8)
+    fig.suptitle(f"Change in Mortality from 2015 to 2040")
+
+    bounds = [-50, -40, -30, -20, -10, 0, 50, 100, 200, 300, 500]
+    vmin = bounds[0]
+    vmax = bounds[-1]
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
+    print(cmap)
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+
+    pct_change_data = np.zeros((len(regions), len(ssps)))
+
+    for i, ssp in enumerate(ssps):
+
+        print(ssp)
+
+        for j, (region, countries, countries_names) in enumerate(
+            zip(regions, region_countries, region_countries_names)
+        ):
+            fractionRegion = get_countries_mask(countries=countries)
+            mort_2015, awm_2015, pwm_2015 = mean(
+                ssp, 2015, fractionRegion, type="Mortality"
+            )
+            mort_2040, awm_2040, pwm_2040 = mean(
+                ssp, 2040, fractionRegion, type="Mortality"
+            )
+            tot_mort_2015 = np.sum(mort_2015)
+            tot_mort_2040 = np.sum(mort_2040)
+            pct_change_data[j, i] = pct_change(tot_mort_2015, tot_mort_2040)
+            print(
+                f"{region}: Mortality Change: {pct_change(tot_mort_2015, tot_mort_2040)}%"
+            )
+
+        mort_2015, awm_2015, pwm_2015 = mean(
+            ssp, 2015, fractionCountries, type="Mortality"
+        )
+        mort_2040, awm_2040, pwm_2040 = mean(
+            ssp, 2040, fractionCountries, type="Mortality"
+        )
+        tot_mort_2015 = np.sum(mort_2015)
+        tot_mort_2040 = np.sum(mort_2040)
+        pct_change_data[-1, i] = pct_change(tot_mort_2015, tot_mort_2040)
+        print(f"World: Mortality Change: {pct_change(tot_mort_2015, tot_mort_2040)}%")
+
+        mort = (mort_2040 - mort_2015) / mort_2015 * 100
+        ax_i = i // 2
+        ax_j = i % 2
+        ax = axes[ax_i, ax_j]
+
+        ax.pcolormesh(
+            longitude, latitude, mort, vmin=vmin, vmax=vmax, cmap=cmap, norm=norm
+        )
+        ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
+        ax.add_feature(cartopy.feature.BORDERS, linewidth=0.5)
+        ax.set_title(ssp)
+
+    output_dir = "/home/ybenp/CMIP6_Images/Mortality/map"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Output csv
+    output_file = os.path.join(output_dir, "pct_change.csv")
+    df = pd.DataFrame(pct_change_data, index=regions, columns=ssps)
+    df.to_csv(output_file)
+
+    # Add color bar
+    cbar = fig.colorbar(
+        matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
+        ax=axes.ravel().tolist(),
+        ticks=bounds,
+        spacing="proportional",
+        shrink=0.9,
+    )
+    cbar.set_label(f"Percent Change in Mortality")
+
+    # Output figure
+    output_file = os.path.join(output_dir, f"Delta.png")
+    plt.savefig(output_file)
+    plt.close(fig)
 
 
 def main():
@@ -190,7 +278,8 @@ def main():
     #     print(mort_mean, std)
     # print(np.mean(all_means))
 
-    map_year(year=2015)
+    # map_year(year=2015)
+    map_delta()
 
 
 if __name__ == "__main__":

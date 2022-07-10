@@ -353,7 +353,7 @@ def map_delta(type="Concentration"):
 
     # Output csv
     if type == "Concentration":
-        output_file = os.path.join(output_dir, f"pct_change.csv")
+        output_file = os.path.join(output_dir, "pct_change.csv")
         df = pd.DataFrame(pct_change_data, index=regions, columns=ssps)
         df.to_csv(output_file)
 
