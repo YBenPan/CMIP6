@@ -48,7 +48,9 @@ def line(region, countries, countries_names):
 
         for j, year in enumerate(years):
             models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
-            all_conc, all_awm, all_pwm = mean(models, ssp, year, fractionCountries, type="PM2.5 Concentration")
+            all_conc, all_awm, all_pwm = mean(
+                models, ssp, year, fractionCountries, type="PM2.5 Concentration"
+            )
 
             # Multi-model mean
             print(
@@ -165,7 +167,9 @@ def map(region, countries, countries_names):
         for j, year in enumerate(years):
             # models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
 
-            all_conc, all_awm, all_pwm = mean(ssp, year, fractionCountries, type="PM2.5 Concentration")
+            all_conc, all_awm, all_pwm = mean(
+                ssp, year, fractionCountries, type="PM2.5 Concentration"
+            )
 
             ax_i = j // 2
             ax_j = j % 2
@@ -233,12 +237,12 @@ def map_year(year, countries=None, type="Concentration"):
     for i, ssp in enumerate(ssps):
 
         conc, awm, pwm = mean(ssp, year, fractionCountries, type="PM2.5 Concentration")
-        
-        if type == "Exposure": 
+
+        if type == "Exposure":
             pop, tot_pop = get_pop(ssp, year, fractionCountries)
             exposure = pop * conc
-            data = exposure / (10 ** 6)
-        elif type == "Concentration": 
+            data = exposure / (10**6)
+        elif type == "Concentration":
             data = conc
         all_data.append(data)
 
@@ -278,7 +282,7 @@ def map_delta(type="Concentration"):
     fig.suptitle(f"Change in PM2.5 {type} from 2015 to 2040")
 
     if type == "Concentration":
-        bounds = [-100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+        bounds = np.arange(-100, 60, 10)
         vmax = 50
     elif type == "Exposure":
         bounds = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
@@ -299,14 +303,22 @@ def map_delta(type="Concentration"):
         ):
 
             fractionRegion = get_countries_mask(countries=countries)
-            conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionRegion, type="PM2.5 Concentration")
-            conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionRegion, type="PM2.5 Concentration")
+            conc_2015, awm_2015, pwm_2015 = mean(
+                ssp, 2015, fractionRegion, type="PM2.5 Concentration"
+            )
+            conc_2040, awm_2040, pwm_2040 = mean(
+                ssp, 2040, fractionRegion, type="PM2.5 Concentration"
+            )
             pct_change_data[j, i] = pct_change(pwm_2015, pwm_2040)
             print(f"{region}: PWM Change: {pct_change(pwm_2015, pwm_2040)}%")
-            
-        conc_2015, awm_2015, pwm_2015 = mean(ssp, 2015, fractionCountries, type="PM2.5 Concentration")
-        conc_2040, awm_2040, pwm_2040 = mean(ssp, 2040, fractionCountries, type="PM2.5 Concentration")
-        conc = (conc_2040 - conc_2015) / conc_2015 * 100       
+
+        conc_2015, awm_2015, pwm_2015 = mean(
+            ssp, 2015, fractionCountries, type="PM2.5 Concentration"
+        )
+        conc_2040, awm_2040, pwm_2040 = mean(
+            ssp, 2040, fractionCountries, type="PM2.5 Concentration"
+        )
+        conc = (conc_2040 - conc_2015) / conc_2015 * 100
 
         pop_2015, tot_pop_2015 = get_pop(ssp, 2015, fractionCountries)
         pop_2040, tot_pop_2040 = get_pop(ssp, 2040, fractionCountries)
@@ -315,10 +327,10 @@ def map_delta(type="Concentration"):
         exposure = (exposure_2040 - exposure_2015) / exposure_2015 * 100
 
         if type == "Exposure":
-            data = exposure      
+            data = exposure
         elif type == "Concentration":
             data = conc
-        
+
         print(ssp, "2015 Global:", np.round(awm_2015, 1), np.round(pwm_2015, 1))
         print(ssp, "2040 Global:", np.round(awm_2040, 1), np.round(pwm_2040, 1))
         pct_change_data[-1, i] = pct_change(pwm_2015, pwm_2040)

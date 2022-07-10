@@ -91,7 +91,7 @@ def get_pop(ssp="ssp245", year=2015, fractionCountries=np.ones((360, 720))):
     pop_ssp = pop_ssp_dict[ssp]
     pop_year = str(year // 10 * 10)
     pop_file = os.path.join(pop_path, pop_ssp, f"{pop_ssp}_tot_{pop_year}.nc")
-    
+
     f1 = Dataset(pop_file, "r")
     pop = f1["population"][:] * fractionCountries
     tot_pop = np.sum(pop)

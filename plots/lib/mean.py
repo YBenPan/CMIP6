@@ -40,10 +40,21 @@ def mean(ssp, year, fractionCountries, type):
 
         # Compute mean PM2.5 concentration of all realizations
         if type == "PM2.5 Concentration":
-            search_str = os.path.join(pm25_path, ssp, "mmrpm2p5", model, "*", f"annual_avg_{year}.nc")
+            search_str = os.path.join(
+                pm25_path, ssp, "mmrpm2p5", model, "*", f"annual_avg_{year}.nc"
+            )
             files = sorted(glob(search_str))
         elif type == "Mortality":
-            search_str = os.path.join(mort_path, "Baseline_Ben_2040_National", "5_years", ssp, f"Pop_{pop_ssp}_var", "MortalityAbsolute", "Allcause_mean", f"{model}_*_{year}_GEMM.nc")
+            search_str = os.path.join(
+                mort_path,
+                "Baseline_Ben_2040_National",
+                "5_years",
+                ssp,
+                f"Pop_{pop_ssp}_var",
+                "MortalityAbsolute",
+                "Allcause_mean",
+                f"{model}_*_{year}_GEMM.nc",
+            )
             files = sorted(glob(search_str))
         if len(files) == 0:
             raise Exception(f"{search_str} not found!")
@@ -56,11 +67,13 @@ def mean(ssp, year, fractionCountries, type):
             wk = Dataset(file, "r")
             if type == "PM2.5 Concentration":
                 data = wk["concpm2p5"][:]
-                country_data = (data * fractionCountries * (10**9))  # Apply mask to concentration array
+                country_data = (
+                    data * fractionCountries * (10**9)
+                )  # Apply mask to concentration array
             elif type == "Mortality":
                 data = wk["deaths__mean"]
-                country_data = (data * fractionCountries)
-            
+                country_data = data * fractionCountries
+
             area_weighted_mean = np.sum(grid_area * country_data) / tot_area
             pop_weighted_mean = np.sum(pop * country_data) / tot_pop
 
@@ -105,9 +118,7 @@ def get_means(regions, region_countries, region_countries_names, ssp, year, type
 
         # Get population for population weighted mean
         pop, tot_pop = get_pop(ssp, year, fractionCountries)
-        conc, awm, pwm = mean(
-            ssp, year, fractionCountries, type
-        )
+        conc, awm, pwm = mean(ssp, year, fractionCountries, type)
         # print(f"{ssp} Region {region} has AWM {awm}, PWM {pwm}")
         awms[i] = awm
         pwms[i] = pwm
@@ -119,7 +130,12 @@ def output_means(regions, region_countries, region_countries_names):
     pwms = []
     for ssp in ssps:
         awm, pwm = get_means(
-            regions, region_countries, region_countries_names, ssp=ssp, year=2015, type="Concentration"
+            regions,
+            region_countries,
+            region_countries_names,
+            ssp=ssp,
+            year=2015,
+            type="Concentration",
         )
         awms.append(awm)
         pwms.append(pwm)
