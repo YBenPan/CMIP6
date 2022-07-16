@@ -20,7 +20,6 @@ from lib.map import get_countries_mask
 
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
-output_dir = "/home/ybenp/CMIP6_Images/Mortality/global_mort"
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
@@ -35,7 +34,7 @@ country_dict = get_country_names()
 regions, region_countries, region_countries_names = get_regions()
 
 
-def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region=None):
+def bar(factor_name, factors, pop, baseline, countries=None, region=None):
     if countries == None:
         countries = [-1]
     if region == None:
@@ -99,10 +98,65 @@ def diseases_stacked(factor_name, factors, pop, baseline, countries=None, region
         y_coords = all_means
         ax.scatter(x=x_coords, y=y_coords)
 
+    output_dir = "/home/ybenp/CMIP6_Images/Mortality/bar"
     output_file = f"{output_dir}/{region}_{factor_name}_{pop}_{baseline}.png"
     plt.savefig(output_file)
-    # plt.show()
     plt.close(fig)
+
+
+def pie(factor_name, factors, countries=None, region=None):
+    if countries == None:
+        countries = [-1]
+    if region == None:
+        region = "World"
+    mort_data = np.zeros((2, len(ssps),  len(factors))) # 2015, 2040
+    years = [2015, 2040]
+
+    fig, axes = plt.subplots(2, 4)
+    fig.suptitle(region)
+    sns.set()
+
+    for i, year in enumerate(years):
+
+        for j, ssp in enumerate(ssps):
+
+            for k, factor in enumerate(factors):
+                ages, disease = init_by_factor(factor_name, factor)
+
+                factor_mean, std = multi_year_mort(
+                    pop="var",
+                    baseline=year,
+                    year=year,
+                    ssp=ssp,
+                    ages=ages,
+                    disease=disease,
+                    countries=countries,
+                    return_values=True,
+                )
+                mort_data[i, j, k] = factor_mean
+            ax = axes[i, j]
+            data = mort_data[i, j]
+            labels = [
+                f"{np.round(mort / np.sum(mort_data[i, j]) * 100, 1)}%" 
+                for mort in mort_data[i, j]
+            ]
+            ax.pie(data, labels=labels, textprops={"size": 4}, startangle=90)
+
+            # Transform to donut plot
+            circle = plt.Circle((0, 0), 0.7, color="white")
+            ax.add_patch(circle)
+            total_deaths = f"{int(np.round(np.sum(mort_data[i, j]), -3)):,}"
+            ax.set_title(f"{ssp}, {year}", fontsize=6)
+            ax.text(0, 0, f"{total_deaths}", ha="center", va="center", fontsize=5)
+            ax.text(0, -0.2, f"deaths", ha="center", va="center", fontsize=5)
+
+    output_dir = "/home/ybenp/CMIP6_Images/Mortality/pie"
+    output_file = f"{output_dir}/{region}_{factor_name}.png"
+    plt.legend(labels=factors, bbox_to_anchor=(1.5, 0.5), fontsize=4)
+    plt.tight_layout()
+    plt.savefig(output_file)
+    plt.close(fig)
+    print(f"Done: {region}")
 
 
 def map_year(year, countries=None):
@@ -159,13 +213,13 @@ def map_delta():
 
     fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
     fig.set_size_inches(18, 8)
-    fig.suptitle(f"Change in Mortality from 2015 to 2040")
+    fig.suptitle(f"Mortality in 2040")
 
-    bounds = [-50, -40, -30, -20, -10, 0, 50, 100, 200, 300, 500]
+    # bounds = [-50, -40, -30, -20, -10, 0, 50, 100, 200, 300, 500]
+    bounds = [0, 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
     vmin = bounds[0]
     vmax = bounds[-1]
-    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
-    print(cmap)
+    cmap = matplotlib.cm.get_cmap("YlOrRd", lut=len(bounds) + 1)
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
     pct_change_data = np.zeros((len(regions), len(ssps)))
@@ -202,7 +256,7 @@ def map_delta():
         pct_change_data[-1, i] = pct_change(tot_mort_2015, tot_mort_2040)
         print(f"World: Mortality Change: {pct_change(tot_mort_2015, tot_mort_2040)}%")
 
-        mort = (mort_2040 - mort_2015) / mort_2015 * 100
+        mort = mort_2040
         ax_i = i // 2
         ax_j = i % 2
         ax = axes[ax_i, ax_j]
@@ -219,39 +273,37 @@ def map_delta():
     os.makedirs(output_dir, exist_ok=True)
 
     # Output csv
-    output_file = os.path.join(output_dir, "pct_change.csv")
-    df = pd.DataFrame(pct_change_data, index=regions, columns=ssps)
-    df.to_csv(output_file)
+    # output_file = os.path.join(output_dir, "pct_change.csv")
+    # df = pd.DataFrame(pct_change_data, index=regions, columns=ssps)
+    # df.to_csv(output_file)
 
     # Add color bar
     cbar = fig.colorbar(
         matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
         ax=axes.ravel().tolist(),
         ticks=bounds,
-        spacing="proportional",
+        spacing="uniform",
         shrink=0.9,
     )
-    cbar.set_label(f"Percent Change in Mortality")
+    cbar.set_label(f"Mortality")
 
     # Output figure
-    output_file = os.path.join(output_dir, f"Delta.png")
+    output_file = os.path.join(output_dir, f"World_2040.png")
     plt.savefig(output_file)
     plt.close(fig)
 
 
 def main():
-    # for (region, countries, countries_names) in zip(
-    #     regions, region_countries, region_countries_names
-    # ):
-    #     diseases_stacked(
-    #         factor_name="Disease",
-    #         factors=diseases,
-    #         pop="var",
-    #         baseline="2040",
-    #         countries=countries,
-    #         region=region,
-    #     )
-    #
+    for (region, countries, countries_names) in zip(
+        regions, region_countries, region_countries_names
+    ):
+        pie(
+            factor_name="Disease",
+            factors=diseases,
+            countries=countries,
+            region=region,
+        )
+    
     # # Get 2015 global mortality numbers
     # all_means = []
     # for ssp in ssps:
@@ -279,8 +331,7 @@ def main():
     # print(np.mean(all_means))
 
     # map_year(year=2015)
-    map_delta()
-
+    # map_delta()
 
 if __name__ == "__main__":
     main()
