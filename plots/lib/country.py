@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import warnings
 from lib.regions import *
 
 
@@ -14,6 +15,7 @@ def get_country_names():
     )
     countries_df = pd.read_csv(countries_file, usecols=["COUNTRY"])
     country_names = [*countries_df["COUNTRY"].values, "World"]
+    warnings.warn("Manually check if world is correct!")
     country_ids = [*countries_df.index.values, -1]
     country_dict = dict(zip(country_names, country_ids))
     return country_dict
@@ -34,6 +36,7 @@ def get_regions():
         "Central Europe": Central_Europe,
         "E. Europe": Eastern_Europe,
         "Central Asia": Central_Asia,
+
         "Caribbean": Caribbean,
         "Central Latin America": Central_Latin_America,
         "Tropical Latin America": Tropical_Latin_America,
@@ -48,6 +51,7 @@ def get_regions():
         "E. Africa": Eastern_Sub_Saharan_Africa,
         "S. Africa": Southern_Sub_Saharan_Africa,
         "W. Africa": Western_Sub_Saharan_Africa,
+
         "World": ["World"],
     }
     region_countries_names = list(region_countries_dict.values())
