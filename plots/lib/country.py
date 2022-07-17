@@ -24,21 +24,25 @@ def get_regions():
     country_dict = get_country_names()
     region_countries_dict = {
         # Custom region settings
+        # High-income
+        "Southern Latin America": Southern_Latin_America,
+        "Australasia": Australasia,
+        "High-income Asia Pacific": High_income_Asia_Pacific,
+        "High-income North America": High_income_North_America,        
         "W. Europe": Western_Europe,
+
         "Central Europe": Central_Europe,
         "E. Europe": Eastern_Europe,
-        "Canada, US": High_income_North_America,
-        "Australia, New Zealand": Australasia,
-        "Caribbean": Caribbean,
-        "Central America": Central_Latin_America,
-        "Argentina, Chile, Uruguay": Southern_Latin_America,
-        "Brazil, Paraguay": Tropical_Latin_America,
-        "Bolivia, Ecuador, Peru": Andean_Latin_America,
         "Central Asia": Central_Asia,
+        "Caribbean": Caribbean,
+        "Central Latin America": Central_Latin_America,
+        "Tropical Latin America": Tropical_Latin_America,
+        "Andean Latin America": Andean_Latin_America,
+
         "South Asia": South_Asia,
         "East Asia": East_Asia,
-        "Brunei, Japan, Singapore, S. Korea": High_income_Asia_Pacific,
         "S.E. Asia": Southeast_Asia,
+
         "N. Africa and Middle East": North_Africa_and_Middle_East,
         "Central Africa": Central_Sub_Saharan_Africa,
         "E. Africa": Eastern_Sub_Saharan_Africa,
