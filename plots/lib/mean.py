@@ -27,16 +27,22 @@ def mean(ssp, year, fractionCountries, type):
     all_awm = []  # Area weighted mean
     all_pwm = []  # Population weighted mean
     models = os.listdir(os.path.join(pm25_path, ssp, "mmrpm2p5"))
+    models = [
+        model
+        for model in models
+        if model
+        in [
+            "CESM2-WACCM6",
+            "GFDL-ESM4",
+            "GISS-E2-1-G",
+            "MIROC-ES2L",
+            "MIROC6",
+            "MRI-ESM2-0",
+            "NorESM2-LM",
+        ]
+    ]
 
     for model in models:
-        # Outlier: extremely large data
-        if "EC-Earth3" in model:
-            continue
-        if "IPSL" in model or "MPI" in model:
-            continue
-        # Skip models that do not include natural PM2.5 sources (anthropogenic only)
-        # if model not in ["GFDL-ESM4", "MRI-ESM2-0"]:
-        #     continue
 
         # Compute mean PM2.5 concentration of all realizations
         if type == "PM2.5 Concentration":
@@ -45,9 +51,10 @@ def mean(ssp, year, fractionCountries, type):
             )
             files = sorted(glob(search_str))
         elif type == "Mortality":
+            search_year = 2040 if year == 2040 else 2015
             search_str = os.path.join(
                 mort_path,
-                "Baseline_Ben_2040_National",
+                f"Baseline_Ben_{search_year}_National",
                 "5_years",
                 ssp,
                 f"Pop_{pop_ssp}_var",
@@ -88,7 +95,6 @@ def mean(ssp, year, fractionCountries, type):
             model_data.append(country_data)
             model_awm.append(area_weighted_mean)
             model_pwm.append(pop_weighted_mean)
-
         model_data = np.mean(model_data, axis=0)
         model_awm = np.mean(model_awm, axis=0)
         model_pwm = np.mean(model_pwm, axis=0)

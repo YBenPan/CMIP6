@@ -19,7 +19,7 @@ output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
 
 
@@ -28,7 +28,7 @@ country_dict = get_country_names()
 regions, region_countries, region_countries_names = get_regions()
 
 # Choose factor
-factor_name = "SSP"
+factor_name = "Disease"
 if factor_name == "Disease":
     factors = diseases
 elif factor_name == "Age":
@@ -72,7 +72,7 @@ def mort(
     year,
     ssp,
     ages=None,
-    disease=None,
+    diseases=None,
     countries=None,
     return_values=False,
 ):
@@ -80,23 +80,28 @@ def mort(
     if countries is None:
         countries = [-1]
     ages = ["all_age_Mean"] if ages is None else ages
-    disease = "Allcause" if disease is None else disease
+    diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
     year = str(year)
     models = get_models(ssp)
     factor_values = []
     pop_ssp = pop_ssp_dict[ssp]
 
     for model in models:
-        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
+
+        # Search Allcause first to get the number of files/realizations in the model
+        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/Allcause_mean/all_ages_{model}_*_{year}_GEMM.csv"
         files = sorted(glob(search_str))
         model_values = np.zeros(len(files))
 
-        for j, file in enumerate(files):
-            wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
-            model_values[j] = np.sum(wk.iloc[countries][ages].values)
+        for disease in diseases:
 
-        if len(model_values) == 0:
-            print(f"No values found in {model}", year, ssp, pop, baseline, disease)
+            search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
+            files = sorted(glob(search_str))
+
+            for j, file in enumerate(files):
+                wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
+                model_values[j] += np.sum(wk.iloc[countries][ages].values)
+
         model_mean = np.mean(model_values)
         # print(f"{model}: {model_mean}")
         factor_values.append(model_mean)
@@ -114,7 +119,7 @@ def multi_year_mort(
     year,
     ssp,
     ages=None,
-    disease=None,
+    diseases=None,
     countries=None,
     return_values=True,
 ):
@@ -127,7 +132,7 @@ def multi_year_mort(
     morts = list()
     for year in years:
         morts.append(
-            mort(pop, baseline, year, ssp, ages, disease, countries, return_values)
+            mort(pop, baseline, year, ssp, ages, diseases, countries, return_values)
         )
     mort_mean = np.mean(morts)
     std = np.std(morts)
@@ -141,7 +146,7 @@ def decompose(factor_name, factors, ssp, region, countries):
     pops = []
     deltas = []
     for factor in factors:
-        ages, disease = init_by_factor(factor_name, factor)
+        ages, diseases = init_by_factor(factor_name, factor)
         if factor_name == "SSP":
             ssp = factor
         ref = mort(
@@ -150,7 +155,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2015,
             ssp=ssp,
             ages=ages,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         )
         delta = mort(
@@ -159,7 +164,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2040,
             ssp=ssp,
             ages=ages,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         ) - mort(
             pop="2010",
@@ -167,7 +172,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2015,
             ssp=ssp,
             ages=ages,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         )
 
@@ -181,7 +186,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2040,
             ssp=ssp,
             ages=ages,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         ) - mort(
             pop="2010",
@@ -189,7 +194,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2015,
             ages=ages,
             ssp=ssp,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         )
         baseline_contribution = mort(
@@ -198,7 +203,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2040,
             ages=ages,
             ssp=ssp,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         ) - mort(
             pop="2010",
@@ -206,7 +211,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2040,
             ages=ages,
             ssp=ssp,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         )
         pop_contribution = mort(
@@ -215,7 +220,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2040,
             ages=ages,
             ssp=ssp,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         ) - mort(
             pop="2010",
@@ -223,7 +228,7 @@ def decompose(factor_name, factors, ssp, region, countries):
             year=2040,
             ages=ages,
             ssp=ssp,
-            disease=disease,
+            diseases=diseases,
             countries=countries,
         )
 
@@ -250,6 +255,8 @@ def visualize():
 
     sns.set()
 
+    overall_df = pd.DataFrame()
+
     for ssp in ssps:
 
         rows = 5
@@ -264,7 +271,7 @@ def visualize():
         ymin = -100
         ymax = 400
 
-        # overall_df = pd.DataFrame()
+        ssp_df = pd.DataFrame()
 
         for i, (region, countries, countries_names) in enumerate(
             zip(regions, region_countries, region_countries_names)
@@ -290,13 +297,14 @@ def visualize():
                 {
                     "Region": region,
                     factor_name: factors,
+                    "SSP": ssp,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
                     "Population": pops,
                     "Overall": deltas,
                 },
             )
-            # overall_df = overall_df.append(df)
+            ssp_df = ssp_df.append(df)
             wk_df = df[
                 [factor_name, "PM2.5 Concentration", "Baseline Mortality", "Population"]
             ]
@@ -342,9 +350,12 @@ def visualize():
         plt.savefig(output_file)
         if factor_name == "SSP":
             break
-        output_file = os.path.join(output_dir, f"{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}.csv")
-        overall_df = overall_df.reset_index(drop=True)
-        overall_df.to_csv(output_file, index=False)
+        
+        overall_df = overall_df.append(ssp_df)
+
+    output_file = os.path.join(output_dir, f"{factor_name}.csv")
+    overall_df = overall_df.reset_index(drop=True)
+    overall_df.to_csv(output_file, index=False)
 
 
 def main():
