@@ -48,11 +48,11 @@ def init_by_factor(factor_name, factor):
             ages = ["all_age_Mean"]
         else:
             raise NameError(f"{factor} ages group not found!")
-        disease = None
+        diseases = None
     elif factor_name == "Disease":
         ages = None
-        disease = factor
+        diseases = [factor]
     else:
         ages = None
-        disease = None
-    return ages, disease
+        diseases = None
+    return ages, diseases
