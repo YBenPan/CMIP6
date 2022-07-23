@@ -14,10 +14,6 @@ from lib.helper import pop_ssp_dict, init_by_factor, pct_change
 from lib.mean import mean
 from lib.map import get_countries_mask
 
-####################################################################################################
-#### CREATE STACKED BAR PLOT OF GLOBAL MORTALITY IN 2015, 2030, AND 2040
-####################################################################################################
-
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 
@@ -35,6 +31,7 @@ regions, region_countries, region_countries_names = get_regions()
 
 
 def bar(factor_name, factors, pop, baseline, countries=None, region=None):
+    """Bar polot of mortality by factors (disease/age) in 2015, 2020, 2030, and 2040"""
     if countries == None:
         countries = [-1]
     if region == None:
@@ -105,15 +102,13 @@ def bar(factor_name, factors, pop, baseline, countries=None, region=None):
 
 
 def pie(factor_name, factors, countries=None, region=None):
+    """Pie/Donut chart of regional mortality by factors (disease/age) in 2015 and 2040 """
     if countries == None:
         countries = [-1]
     if region == None:
         region = "World"
-    mort_data = np.zeros((2, len(ssps), len(factors) + 1))  # 2015, 2040
+    mort_data = np.zeros((2, len(ssps),  len(factors))) # 2015, 2040
     years = [2015, 2040]
-
-    if factor_name == "Disease":
-        factors = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 
     fig, axes = plt.subplots(2, 4)
     fig.suptitle(region)
@@ -137,21 +132,13 @@ def pie(factor_name, factors, countries=None, region=None):
                     return_values=True,
                 )
                 mort_data[i, j, k] = factor_mean
-
-            # Other = Allcause - (COPD + ... + T2D)
-            mort_data[i, j, 0] -= np.sum(mort_data[i, j, 1:])
-
-            # Plot pie chart
             ax = axes[i, j]
             data = mort_data[i, j]
-            labels = [f"{np.round(mort, -3)}%" for mort in mort_data[i, j]]
-            ax.pie(
-                data,
-                labels=labels,
-                autopct="%.1f",
-                textprops={"size": 4},
-                startangle=90,
-            )
+            labels = [
+                f"{np.round(mort / np.sum(mort_data[i, j]) * 100, 1)}%" 
+                for mort in mort_data[i, j]
+            ]
+            ax.pie(data, labels=labels, textprops={"size": 4}, startangle=90)
 
             # Transform to donut plot
             circle = plt.Circle((0, 0), 0.7, color="white")
@@ -162,8 +149,7 @@ def pie(factor_name, factors, countries=None, region=None):
             ax.text(0, -0.2, f"deaths", ha="center", va="center", fontsize=5)
 
     output_dir = "/home/ybenp/CMIP6_Images/Mortality/pie"
-    output_file = f"{output_dir}/{region}_{factor_name}_other.png"
-    factors[0] = "Other"
+    output_file = f"{output_dir}/{region}_{factor_name}.png"
     plt.legend(labels=factors, bbox_to_anchor=(1.5, 0.5), fontsize=4)
     plt.tight_layout()
     plt.savefig(output_file)
@@ -192,6 +178,7 @@ def map_year(year, countries=None):
     for i, ssp in enumerate(ssps):
 
         mort, awm, pwm = mean(ssp, year, fractionCountries, type="Mortality")
+        print(year, ssp, np.sum(mort))
         data = mort
         all_data.append(data)
 
@@ -310,12 +297,12 @@ def main():
         regions, region_countries, region_countries_names
     ):
         pie(
-            factor_name="Disease",
-            factors=diseases,
+            factor_name="Age",
+            factors=age_groups,
             countries=countries,
             region=region,
         )
-
+    
     # # Get 2015 global mortality numbers
     # all_means = []
     # for ssp in ssps:
@@ -343,8 +330,10 @@ def main():
     # print(np.mean(all_means))
 
     # map_year(year=2015)
+    # map_year(year=2020)
+    # map_year(year=2030)
+    # map_year(year=2040)
     # map_delta()
-
 
 if __name__ == "__main__":
     main()
