@@ -37,7 +37,7 @@ def main():
         )
     ).send_keys(Keys.SPACE)
 
-    # TODO: "Use advanced settings"
+    # "Use advanced settings"
     wait.until(
         EC.element_to_be_clickable((By.XPATH, '//*[@id="advanced-settings-button"]'))
     ).send_keys(Keys.SPACE)
@@ -46,7 +46,7 @@ def main():
     age = "Age-standardized"
     for disease, disease_id in zip(diseases, disease_ids):
 
-        # TODO: Cause dropdown
+        # Cause dropdown
         browser.find_element_by_xpath('//*[@id="s2id_autogen3"]').send_keys(Keys.SPACE)
         cause_elem = browser.find_element_by_xpath(f'//*[@id="select2-results-3"]/li[{disease_id}]')
         browser.execute_script("arguments[0].scrollIntoView();", cause_elem)
@@ -70,7 +70,7 @@ def main():
 
         time.sleep(5)
 
-        # TODO: Open download.csv and change name
+        # Open download.csv and change name
         default_file = os.path.join(default_path, "download.csv")
         output_path = os.path.join(default_path, str(year), disease)
         os.makedirs(output_path, exist_ok=True)
