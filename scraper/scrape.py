@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 import time
 import shutil
 import os
+import pandas as pd
 
 diseases = ["COPD", "IHD", "LRI", "LC", "Stroke", "T2D"]
 # How to get disease id:
@@ -16,17 +17,17 @@ disease_ids = [126, 111, 12, 85, 112, 167]
 default_path = "/Users/benpan/Documents/Mortality"
 
 ages = [
-    # "25-29",
-    # "30-34",
-    # "35-39",
-    # "40-44",
-    # "45-49",
-    # "50-54",
-    # "55-59",
-    # "60-64",
-    # "65-69",
-    # "70-74",
-    # "75-79",
+    "25-29",
+    "30-34",
+    "35-39",
+    "40-44",
+    "45-49",
+    "50-54",
+    "55-59",
+    "60-64",
+    "65-69",
+    "70-74",
+    "75-79",
     "80-84",
     "85-89",
     "90-94",
@@ -34,17 +35,17 @@ ages = [
 ]
 
 age_urls = [
-    # "http://ihmeuw.org/5tc4",  # 25-29
-    # "http://ihmeuw.org/5tc5",  # 30-34
-    # "http://ihmeuw.org/5tc6",  # 35-39
-    # "http://ihmeuw.org/5tc9",  # 40-44
-    # "http://ihmeuw.org/5tca",  # 45-49
-    # "http://ihmeuw.org/5tcb",  # 50-54
-    # "http://ihmeuw.org/5tcc",  # 55-59
-    # "http://ihmeuw.org/5t9m",  # 60-64
-    # "http://ihmeuw.org/5tcd",  # 65-69
-    # "http://ihmeuw.org/5tce",  # 70-74
-    # "http://ihmeuw.org/5tcf",  # 75-79
+    "http://ihmeuw.org/5tc4",  # 25-29
+    "http://ihmeuw.org/5tc5",  # 30-34
+    "http://ihmeuw.org/5tc6",  # 35-39
+    "http://ihmeuw.org/5tc9",  # 40-44
+    "http://ihmeuw.org/5tca",  # 45-49
+    "http://ihmeuw.org/5tcb",  # 50-54
+    "http://ihmeuw.org/5tcc",  # 55-59
+    "http://ihmeuw.org/5t9m",  # 60-64
+    "http://ihmeuw.org/5tcd",  # 65-69
+    "http://ihmeuw.org/5tce",  # 70-74
+    "http://ihmeuw.org/5tcf",  # 75-79
     "http://ihmeuw.org/5tcg",  # 80-84
     "http://ihmeuw.org/5tch",  # 85-89
     "http://ihmeuw.org/5tc8",  # 90-94
@@ -70,7 +71,7 @@ def main():
 
         browser.get(age_url)  # Preload link with advanced settings
         browser.maximize_window()
-        assert "GBD Foresight" in browser.title 
+        assert "GBD Foresight" in browser.title
 
         wait = WebDriverWait(browser, 10)
         # Click on map on the left sidebar
@@ -112,6 +113,8 @@ def main():
 
             # TODO: Scroll to age
 
+            time.sleep(2)
+
             # Click on download button
             dl_elem = browser.find_element_by_xpath(
                 '//*[@id="header-actions-download"]'
@@ -127,7 +130,9 @@ def main():
             time.sleep(2)
             os.sync()
 
-            # FIXME: Error that csv with 0s is copied to the output location
+            default_file = os.path.join(default_path, "download.csv")
+            df = pd.read_csv(default_file)
+            print(df)
 
             # Open download.csv and change name
             default_file = os.path.join(default_path, "download.csv")
@@ -135,7 +140,6 @@ def main():
             os.makedirs(output_path, exist_ok=True)
             output_file = os.path.join(output_path, f"{age}.csv")
             shutil.move(default_file, output_file)
-            time.sleep(2)
 
             print(f"Done: {age}, {disease}")
 
