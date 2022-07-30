@@ -72,7 +72,7 @@ def rename_helper(df):
     return df
 
 
-def gen_output(disease, data, output_description, subnatl_path, is_combined=False):
+def gen_output(disease, data, output_description, subnatl_path=None, is_combined=False):
     """Generate output Dataset"""
     if disease in ["Allcause", "COPD", "Diabetes", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer", "NonCommunicableDiseases", "Stroke"]:
         age_25_29_mean = data[0][0]

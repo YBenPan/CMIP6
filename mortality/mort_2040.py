@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
-import math
+import os
 from netCDF4 import Dataset
 from mort_2015 import rename_helper, gen_output
 
@@ -11,18 +11,45 @@ from mort_2015 import rename_helper, gen_output
 
 fraction_path = "D:/CMIP6_data/fraction/"
 
-diseases = ["allcause", "copd", "dementia", "diabetes", "ihd", "lri", "lc", "ncd", "stroke"]
-disease_names = ["Allcause", "COPD", "Dementia", "Diabetes", "IschemicHeartDisease", "LowerRespiratoryInfections", "LungCancer",
-                 "NonCommunicableDiseases", "Stroke"]
+diseases = ["Allcause", "COPD", "Dementia", "T2D", "IHD", "LRI", "LC", "NCD", "Stroke"]
+disease_names = [
+    "Allcause",
+    "COPD",
+    "Dementia",
+    "Diabetes",
+    "IschemicHeartDisease",
+    "LowerRespiratoryInfections",
+    "LungCancer",
+    "NonCommunicableDiseases",
+    "Stroke",
+]
 data_types_2015 = ["val", "upper", "lower"]
-data_types_2040 = [["Deaths.2016.Number", "Deaths.2040.Number"], ["Deaths.2016.Upper", "Deaths.2040.Upper"], ["Deaths.2016.Lower", "Deaths.2040.Lower"], ]
+data_types_2040 = ["Value", "Upper bound", "Lower bound"]
+age_groups = [
+    "25-29 years",
+    "30-34 years",
+    "35-39 years",
+    "40-44 years",
+    "45-49 years",
+    "50-54 years",
+    "55-59 years",
+    "60-64 years",
+    "65-69 years",
+    "70-74 years",
+    "75-79 years",
+    "80-84 years",
+    "85-89 years",
+    "90-94 years",
+    "95+ years",
+]
+
 
 # Import country fraction
 fraction_file = f"countryFractions_2010_0.5x0.5.nc"
 f1 = Dataset(fraction_path + fraction_file, "r")
 fractionCountry = f1.variables["fractionCountry"][
-                  :, :, :
-                  ]  # countryIndex, latitude, longitude
+    :, :, :
+]  # countryIndex, latitude, longitude
 latitude = f1.variables["latitude"][:]
 longitude = f1.variables["longitude"][:]
 f1.close()
@@ -31,149 +58,39 @@ fractionCountry[fractionCountry < 0.0] = 0.0
 fractionCountry[fractionCountry > 1.0] = 0.0
 
 national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_5_years/"
-national_projection_path = "D:/CMIP6_data/Mortality/Mortality Projections_2040/"
-subnational_nc_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
+national_projection_path = "D:/CMIP6_data/Mortality/All Age Mortality Projections_2040/"
+subnational_nc_path = (
+    "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
+)
 
 # Countries with subnational data
-countries = ["brazil", "ethiopia", "indonesia", "iran", "japan", "kenya", "mexico", "pakistan", "south_africa", "uk", "us"]
-country_long_names = ["Brazil", "Ethiopia", "Indonesia", "Iran", "Japan", "Kenya", "Mexico", "Pakistan", "South Africa", "the United Kingdom", "the United States"]
+countries = [
+    "brazil",
+    "ethiopia",
+    "indonesia",
+    "iran",
+    "japan",
+    "kenya",
+    "mexico",
+    "pakistan",
+    "south_africa",
+    "uk",
+    "us",
+]
+country_long_names = [
+    "Brazil",
+    "Ethiopia",
+    "Indonesia",
+    "Iran",
+    "Japan",
+    "Kenya",
+    "Mexico",
+    "Pakistan",
+    "South Africa",
+    "the United Kingdom",
+    "the United States",
+]
 country_ids = [23, 58, 78, 79, 85, 88, 109, 127, 158, 181, 183]
-
-
-# def gen_output(disease, data, output_description, is_combined=False):
-#     """Generate output Dataset"""
-#     if disease in ["IschemicHeartDisease", "NonCommunicableDiseases", "Stroke"]:
-#         post25_mean = data[0][0]
-#         post25_upper = data[0][1]
-#         post25_lower = data[0][2]
-#         post60_mean = np.sum(data[8:], axis=0)[0]
-#         post60_upper = np.sum(data[8:], axis=0)[1]
-#         post60_lower = np.sum(data[8:], axis=0)[2]
-#         post80_mean = data[12][0]
-#         post80_upper = data[12][1]
-#         post80_lower = data[12][2]
-#
-#         if is_combined:
-#             # Add in subnational data
-#             for country in countries:
-#                 subnational_baseline_file = f"{country}_{disease}.nc"
-#                 try:
-#                     subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
-#                     subnatl_data = subnatl_wk.data_vars
-#                 except:
-#                     print(f"Error importing {disease} {country} subnational data")
-#                     continue
-#                 post25_mean[:, :] += subnatl_data["post25_mean"].values
-#                 post25_upper[:, :] += subnatl_data["post25_upper"].values
-#                 post25_lower[:, :] += subnatl_data["post25_lower"].values
-#                 post60_mean[:, :] += subnatl_data["post60_mean"].values
-#                 post60_upper[:, :] += subnatl_data["post60_upper"].values
-#                 post60_lower[:, :] += subnatl_data["post60_lower"].values
-#                 post80_mean[:, :] += subnatl_data["post80_mean"].values
-#                 post80_upper[:, :] += subnatl_data["post80_upper"].values
-#                 post80_lower[:, :] += subnatl_data["post80_lower"].values
-#
-#         ds = xr.Dataset(
-#             data_vars=dict(
-#                 post25_mean=(["lat", "lon"], post25_mean),
-#                 post25_upper=(["lat", "lon"], post25_upper),
-#                 post25_lower=(["lat", "lon"], post25_lower),
-#                 post60_mean=(["lat", "lon"], post60_mean),
-#                 post60_upper=(["lat", "lon"], post60_upper),
-#                 post60_lower=(["lat", "lon"], post60_lower),
-#                 post80_mean=(["lat", "lon"], post80_mean),
-#                 post80_upper=(["lat", "lon"], post80_upper),
-#                 post80_lower=(["lat", "lon"], post80_lower),
-#             ),
-#             coords=dict(
-#                 lat=(["lat"], latitude),
-#                 lon=(["lon"], longitude),
-#             ),
-#             attrs=dict(
-#                 description=output_description,
-#             ),
-#         )
-#
-#     elif disease in ["COPD", "LowerRespiratoryInfections", "LungCancer", "Diabetes"]:
-#         post25_mean = data[0][0]
-#         post25_upper = data[0][1]
-#         post25_lower = data[0][2]
-#
-#         if is_combined:
-#             # Add in subnational data
-#             for country in countries:
-#                 subnational_baseline_file = f"{country}_{disease}.nc"
-#                 try:
-#                     subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
-#                     subnatl_data = subnatl_wk.data_vars
-#                 except:
-#                     print(f"Error importing {disease} {country} subnational data")
-#                     continue
-#                 post25_mean[:, :] += subnatl_data["post25_mean"].values
-#                 post25_upper[:, :] += subnatl_data["post25_upper"].values
-#                 post25_lower[:, :] += subnatl_data["post25_lower"].values
-#
-#         ds = xr.Dataset(
-#             data_vars=dict(
-#                 post25_mean=(["lat", "lon"], post25_mean),
-#                 post25_upper=(["lat", "lon"], post25_upper),
-#                 post25_lower=(["lat", "lon"], post25_lower),
-#             ),
-#             coords=dict(
-#                 lat=(["lat"], latitude),
-#                 lon=(["lon"], longitude),
-#             ),
-#             attrs=dict(
-#                 description=output_description,
-#             ),
-#         )
-#
-#     elif disease == "Dementia":
-#         post65_mean = np.sum(data[[0, 2]], axis=0)[0]
-#         post65_upper = np.sum(data[[0, 2]], axis=0)[1]
-#         post65_lower = np.sum(data[[0, 2]], axis=0)[2]
-#         post75_mean = data[2][0]
-#         post75_upper = data[2][1]
-#         post75_lower = data[2][2]
-#
-#         if is_combined:
-#             # Add in subnational data
-#             for country in countries:
-#                 subnational_baseline_file = f"{country}_{disease}.nc"
-#                 try:
-#                     subnatl_wk = xr.open_dataset(subnational_baseline_path + subnational_baseline_file)
-#                     subnatl_data = subnatl_wk.data_vars
-#                 except:
-#                     print(f"Error importing {disease} {country} subnational data")
-#                     continue
-#                 post65_mean[:, :] += subnatl_data["post65_mean"].values
-#                 post65_upper[:, :] += subnatl_data["post65_upper"].values
-#                 post65_lower[:, :] += subnatl_data["post65_lower"].values
-#                 post75_mean[:, :] += subnatl_data["post75_mean"].values
-#                 post75_upper[:, :] += subnatl_data["post75_upper"].values
-#                 post75_lower[:, :] += subnatl_data["post75_lower"].values
-#
-#         ds = xr.Dataset(
-#             data_vars=dict(
-#                 post65_mean=(["lat", "lon"], post65_mean),
-#                 post65_upper=(["lat", "lon"], post65_upper),
-#                 post65_lower=(["lat", "lon"], post65_lower),
-#                 post75_mean=(["lat", "lon"], post75_mean),
-#                 post75_upper=(["lat", "lon"], post75_upper),
-#                 post75_lower=(["lat", "lon"], post75_lower),
-#             ),
-#             coords=dict(
-#                 lat=(["lat"], latitude),
-#                 lon=(["lon"], longitude),
-#             ),
-#             attrs=dict(
-#                 description=output_description,
-#             )
-#         )
-#     else:
-#         raise Exception("Undefined disease")
-#
-#     return ds
 
 
 def combined_output():
@@ -186,23 +103,38 @@ def combined_output():
         # Import national baseline data from 2015
         national_baseline_file = f"{disease_name}.csv"
         try:
-            natl_2015 = pd.read_csv(national_baseline_path + national_baseline_file, usecols=[3, 7, 11, 12, 13, 14, 15])
+            natl_2015 = pd.read_csv(
+                national_baseline_path + national_baseline_file,
+                usecols=[3, 7, 11, 12, 13, 14, 15],
+            )
         except:
-            print("Error importing 2015 national baseline files", disease, national_baseline_path + national_baseline_file)
+            print(
+                "Error importing 2015 national baseline files",
+                disease,
+                national_baseline_path + national_baseline_file,
+            )
             continue
         natl_2015 = rename_helper(natl_2015)
         natl_2015 = natl_2015[
-            (natl_2015["year"] == 2015) & (natl_2015["metric_name"] == "Rate")]
+            (natl_2015["year"] == 2015) & (natl_2015["metric_name"] == "Rate")
+        ]
         natl_2015 = natl_2015.drop(columns=["metric_name", "year"])
-        natl_2015 = natl_2015.sort_values(['location_name', 'age_name'])
-        age_groups = sorted(list(set(natl_2015['age_name'].values)))
+        natl_2015 = natl_2015.sort_values(["location_name", "age_name"])
+        age_groups = sorted(list(set(natl_2015["age_name"].values)))
 
         # Import national baseline projection from 2040
         national_projection_file = f"{disease}_rate.csv"
         try:
-            natl_2040 = pd.read_csv(national_projection_path + national_projection_file, usecols=[2, 18, 19, 20, 21, 22, 23])
+            natl_2040 = pd.read_csv(
+                national_projection_path + national_projection_file,
+                usecols=[2, 18, 19, 20, 21, 22, 23],
+            )
         except:
-            print("Error importing 2040 baseline projection files", disease, national_projection_path + national_projection_file)
+            print(
+                "Error importing 2040 baseline projection files",
+                disease,
+                national_projection_path + national_projection_file,
+            )
             continue
         natl_2040 = natl_2040.fillna(0)
 
@@ -224,17 +156,28 @@ def combined_output():
                     # Calculate ratio to evolve age group data from 2015 to 2040
                     natl_2015_val = natl_2040.iloc[j][data_type_2040[0]]
                     natl_2040_val = natl_2040.iloc[j][data_type_2040[1]]
-                    if natl_2015_val == 0 or np.isnan(natl_2015_val) or natl_2040_val == 0 or np.isnan(natl_2040_val):
+                    if (
+                        natl_2015_val == 0
+                        or np.isnan(natl_2015_val)
+                        or natl_2040_val == 0
+                        or np.isnan(natl_2040_val)
+                    ):
                         ratio = 0
                     else:
                         ratio = natl_2040_val / natl_2015_val
 
                     # retrieve mortality corresponding to correct age group and state
                     try:
-                        tmp = natl_2015.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
-                        mort = tmp[(tmp["age_name"] == age_group)][data_type_2015].values[0]
+                        tmp = natl_2015.iloc[
+                            np.arange(j * len(age_groups), (j + 1) * len(age_groups))
+                        ]
+                        mort = tmp[(tmp["age_name"] == age_group)][
+                            data_type_2015
+                        ].values[0]
                     except IndexError:
-                        print("Error importing 2015 national baseline files", age_group, j)
+                        print(
+                            "Error importing 2015 national baseline files", age_group, j
+                        )
                         break
 
                     if disease_name != "Dementia":
@@ -243,10 +186,18 @@ def combined_output():
                         data[k + 3, p, :, :] += fractionCountry[j, :, :] * mort * ratio
 
         output_file = f"{disease_name}.nc"
-        output_description = f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2040, with " \
-                             f"subnational-level data in Brazil, Ethiopia, Indonesia, Iran, Japan, Kenya, " \
-                             f"Mexico, Pakistan, South Africa, UK, and US and national-level data"
-        ds = gen_output(disease_name, data, output_description, subnational_nc_path, is_combined=True)
+        output_description = (
+            f"Gridded (0.5x0.5) mortality rate of {disease} by age groups in 2040, with "
+            f"subnational-level data in Brazil, Ethiopia, Indonesia, Iran, Japan, Kenya, "
+            f"Mexico, Pakistan, South Africa, UK, and US and national-level data"
+        )
+        ds = gen_output(
+            disease_name,
+            data,
+            output_description,
+            subnational_nc_path,
+            is_combined=True,
+        )
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -258,14 +209,16 @@ def subnational_output():
     output_path = "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
     national_projection_path = "D:/CMIP6_data/Mortality/Mortality Projections_2040/"
 
-    for country, country_long_name, country_id in zip(countries, country_long_names, country_ids):
+    for country, country_long_name, country_id in zip(
+        countries, country_long_names, country_ids
+    ):
 
         # import state fractions
         fraction_file = f"{country}_state_fraction_0.5x0.5.nc"
         f1 = Dataset(fraction_path + fraction_file, "r")
         fractionState = f1.variables["fractionState"][
-                        :, :, :
-                        ]  # stateIndex, latitude, longitude
+            :, :, :
+        ]  # stateIndex, latitude, longitude
         states = f1.variables["state"][:]
         f1.close()
 
@@ -275,27 +228,45 @@ def subnational_output():
             # Import projection and calculate ratio
             national_projection_file = f"{disease}_rate.csv"
             try:
-                natl_2040 = pd.read_csv(national_projection_path + national_projection_file, usecols=[2, 18, 19, 20, 21, 22, 23])
+                natl_2040 = pd.read_csv(
+                    national_projection_path + national_projection_file,
+                    usecols=[2, 18, 19, 20, 21, 22, 23],
+                )
             except:
-                print("Error importing 2040 baseline projection files", disease, national_projection_path + national_projection_file)
+                print(
+                    "Error importing 2040 baseline projection files",
+                    disease,
+                    national_projection_path + national_projection_file,
+                )
                 continue
             natl_2040 = natl_2040.fillna(0)
 
             # import mortality baseline
-            subnatl_baseline_path = "D:/CMIP6_data/Mortality/Subnational Data_historical_5_years/"
+            subnatl_baseline_path = (
+                "D:/CMIP6_data/Mortality/Subnational Data_historical_5_years/"
+            )
             subnatl_baseline_file = f"{disease_name}.csv"
             # location name, age_name, metric_name, year, val
-            subnatl_2015 = pd.read_csv(subnatl_baseline_path + subnatl_baseline_file, usecols=[3, 7, 11, 12, 13, 14, 15])
-            subnatl_2015 = subnatl_2015[(subnatl_2015["location_name"].isin(states)) & (subnatl_2015["year"] == 2015) & (subnatl_2015["metric_name"] == "Rate")]
+            subnatl_2015 = pd.read_csv(
+                subnatl_baseline_path + subnatl_baseline_file,
+                usecols=[3, 7, 11, 12, 13, 14, 15],
+            )
+            subnatl_2015 = subnatl_2015[
+                (subnatl_2015["location_name"].isin(states))
+                & (subnatl_2015["year"] == 2015)
+                & (subnatl_2015["metric_name"] == "Rate")
+            ]
             subnatl_2015 = subnatl_2015.drop(columns=["metric_name", "year"])
-            subnatl_2015 = subnatl_2015.sort_values(['location_name', 'age_name'])
+            subnatl_2015 = subnatl_2015.sort_values(["location_name", "age_name"])
 
-            age_groups = sorted(list(set(subnatl_2015['age_name'].values)))
+            age_groups = sorted(list(set(subnatl_2015["age_name"].values)))
             data = np.zeros((15, len(data_types_2040), len(latitude), len(longitude)))
 
             for j, state in enumerate(states):
 
-                if country_long_name == "Pakistan" and (state == "Azad Jammu & Kashmir" or state == "Gilgit-Baltistan"):
+                if country_long_name == "Pakistan" and (
+                    state == "Azad Jammu & Kashmir" or state == "Gilgit-Baltistan"
+                ):
                     continue
 
                 for k, age_group in enumerate(age_groups):
@@ -307,15 +278,22 @@ def subnational_output():
                         natl_2015_val = natl_2040.iloc[country_id][data_type_2040[0]]
                         natl_2040_val = natl_2040.iloc[country_id][data_type_2040[1]]
                         # print(j, age_group, data_type_2015, natl_2015_val, natl_2040_val)
-                        if natl_2015_val == 0 or np.isnan(natl_2015_val) or natl_2040_val == 0 or np.isnan(
-                                natl_2040_val):
+                        if (
+                            natl_2015_val == 0
+                            or np.isnan(natl_2015_val)
+                            or natl_2040_val == 0
+                            or np.isnan(natl_2040_val)
+                        ):
                             ratio = 0
                         else:
                             ratio = natl_2040_val / natl_2015_val
 
                         # Retrieve mortality corresponding to correct age group and state
                         try:
-                            mort = subnatl_2015[(subnatl_2015["age_name"] == age_group) & (subnatl_2015["location_name"] == state)][data_type_2015].values[0]
+                            mort = subnatl_2015[
+                                (subnatl_2015["age_name"] == age_group)
+                                & (subnatl_2015["location_name"] == state)
+                            ][data_type_2015].values[0]
                         except IndexError:
                             print(age_group, state)
                             break
@@ -323,12 +301,18 @@ def subnational_output():
                         if disease_name != "Dementia":
                             data[k, p, :, :] += fractionState[j, :, :] * mort * ratio
                         else:
-                            data[k + 3, p, :, :] += fractionState[j, :, :] * mort * ratio
+                            data[k + 3, p, :, :] += (
+                                fractionState[j, :, :] * mort * ratio
+                            )
 
             output_file = f"{country}_{disease_name}.nc"
-            output_description = f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups" \
-                                 f" in 2040 "
-            ds = gen_output(disease_name, data, output_description, subnatl_baseline_path)
+            output_description = (
+                f"Gridded (0.5x0.5) mortality rate of {disease} in {country_long_name} by age groups"
+                f" in 2040 "
+            )
+            ds = gen_output(
+                disease_name, data, output_description, subnatl_baseline_path
+            )
             ds.to_netcdf(output_path + output_file)
             ds.close()
 
@@ -336,32 +320,9 @@ def subnational_output():
 
 
 def national_output():
-
     """Outputs gridded mortality baseline for all countries in 2040"""
 
     for disease, disease_name in zip(diseases, disease_names):
-
-        # Import national baseline data from 2015
-        national_baseline_file = f"{disease_name}.csv"
-        try:
-            natl_2015 = pd.read_csv(national_baseline_path + national_baseline_file)
-        except:
-            print(f"Error importing {disease_name} at {national_baseline_path + national_baseline_file}")
-            continue
-        natl_2015 = rename_helper(natl_2015)
-        natl_2015 = natl_2015[
-            (natl_2015["year"] == 2015) & (natl_2015["metric_name"] == "Rate")]
-        natl_2015 = natl_2015.drop(columns=["metric_name", "year"])
-        natl_2015 = natl_2015.sort_values(['location_name', 'age_name'])
-        age_groups = sorted(list(set(natl_2015['age_name'].values)))
-
-        # Import national baseline projection from 2040
-        national_projection_file = f"{disease}_rate.csv"
-        try:
-            natl_2040 = pd.read_csv(national_projection_path + national_projection_file, usecols=[2, 18, 19, 20, 21, 22, 23])
-        except:
-            continue
-        natl_2040 = natl_2040.fillna(0)
 
         data = np.zeros((15, len(data_types_2040), len(latitude), len(longitude)))
 
@@ -370,36 +331,31 @@ def national_output():
 
             for k, age_group in enumerate(age_groups):
 
-                for p, data_type_2015 in enumerate(data_types_2015):
+                # Import national baseline projection from 2040
+                national_projection_file = os.path.join(
+                    national_projection_path, "2040", disease, f"{age_group}.csv"
+                )
+                natl_2040 = pd.read_csv(national_projection_file, usecols=[1, 7, 8, 9])
+                natl_2040 = natl_2040.fillna(0)
 
-                    data_type_2040 = data_types_2040[p]
+                for p, data_type_2040 in enumerate(data_types_2040):
 
-                    # Calculate ratio to evolve age group data from 2015 to 2040
-                    natl_2015_val = natl_2040.iloc[j][data_type_2040[0]]
-                    natl_2040_val = natl_2040.iloc[j][data_type_2040[1]]
-                    # print(j, age_group, data_type_2015, natl_2015_val, natl_2040_val)
-                    if natl_2015_val == 0 or np.isnan(natl_2015_val) or natl_2040_val == 0 or np.isnan(natl_2040_val):
-                        ratio = 0
-                    else:
-                        ratio = natl_2040_val / natl_2015_val
-
-                    # Retrieve mortality corresponding to correct age group and state
+                    # Retrieve mortality corresponding to the correct age group and state
                     try:
-                        tmp = natl_2015.iloc[np.arange(j * len(age_groups), (j + 1) * len(age_groups))]
-                        mort = tmp[(tmp["age_name"] == age_group)][data_type_2015].values[0]
+                        tmp = natl_2040.iloc[j]
+                        mort = tmp[data_type_2040]
                     except IndexError:
                         print(age_group, j)
                         break
 
-                    if disease_name != "Dementia":
-                        data[k, p, :, :] += fractionCountry[j, :, :] * mort * ratio
-                    else:
-                        data[k + 3, p, :, :] += fractionCountry[j, :, :] * mort * ratio
+                    data[k, p, :, :] += fractionCountry[j, :, :] * mort
 
-        output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by age groups (25+, 60+, 80+) with national-level data only in 2040"
-        output_path = "D:/CMIP6_data/Mortality/Output/National_mortality_baseline_2040/"
+        output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by 5-year age groups with national-level data only in 2040"
+        output_path = (
+            "D:/CMIP6_data/Mortality/Output/New_National_mortality_baseline_2040/"
+        )
         output_file = f"{disease_name}.nc"
-        ds = gen_output(disease_name, data, output_description, subnational_nc_path)
+        ds = gen_output(disease_name, data, output_description)
         ds.to_netcdf(output_path + output_file)
         ds.close()
 
@@ -407,9 +363,9 @@ def national_output():
 
 
 def main():
-    subnational_output()
-    combined_output()
-    # national_output()
+    # subnational_output()
+    # combined_output()
+    national_output()
 
 
 if __name__ == "__main__":
