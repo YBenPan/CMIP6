@@ -58,7 +58,7 @@ fractionCountry[fractionCountry < 0.0] = 0.0
 fractionCountry[fractionCountry > 1.0] = 0.0
 
 national_baseline_path = "D:/CMIP6_data/Mortality/National Data_historical_5_years/"
-national_projection_path = "D:/CMIP6_data/Mortality/All Age Mortality Projections_2040/"
+national_projection_path = "D:/CMIP6_data/Mortality/Age-specific Mortality Projections_2040/"
 subnational_nc_path = (
     "D:/CMIP6_data/Mortality/Output/Subnational_mortality_baseline_2040/"
 )
@@ -352,7 +352,7 @@ def national_output():
 
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by 5-year age groups with national-level data only in 2040"
         output_path = (
-            "D:/CMIP6_data/Mortality/Output/New_National_mortality_baseline_2040/"
+            "D:/CMIP6_data/Mortality/Output/Age_specific_National_mortality_baseline_2040/"
         )
         output_file = f"{disease_name}.nc"
         ds = gen_output(disease_name, data, output_description)

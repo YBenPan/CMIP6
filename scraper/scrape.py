@@ -15,8 +15,8 @@ diseases = ["Allcause", "COPD", "Dementia", "IHD", "LRI", "LC", "NCD", "Stroke",
 # Select dropdown item to inspect
 # Copy XPath of <li> element
 disease_ids = [1, 126, 152, 111, 12, 85, 69, 112, 167]
-download_path = "D:\CMIP6_data\Mortality\All Age Mortality Projections_2040_dl"
-mort_path = "D:\CMIP6_data\Mortality\All Age Mortality Projections_2040"
+download_path = "D:\CMIP6_data\Mortality\Age-specific Mortality Projections_2040_dl"
+mort_path = "D:\CMIP6_data\Mortality\Age-specific Mortality Projections_2040"
 
 ages = [
     "25-29 years",
