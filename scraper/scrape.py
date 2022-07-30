@@ -147,8 +147,116 @@ def download():
     browser.quit()
 
 
+def rename_helper(df):
+    """Drop, rename, and add countries"""
+    to_be_dropped = [
+        "American Samoa",
+        "Bermuda",
+        "Greenland",
+        "Guam",
+        "Montenegro",
+        "Northern Mariana Islands",
+        "Palestine",
+        "South Sudan",
+        "Taiwan (Province of China)",
+        "Virgin Islands, U.S.",
+    ]
+
+    to_be_renamed = {
+        "The Bahamas": "Bahamas",
+        "North Korea": "Democratic Republic of North Korea",
+        "Federated States of Micronesia": "Micronesia",
+        "The Gambia": "Gambia",
+        "Macedonia": "Thb.Macedonia",
+        "Moldova": "Ra.Moldova",
+        "South Korea": "Qb.South Korea",
+        "Puerto Rico": "Zz.Puerto Rico",
+        "Russian Federation": "Russia",
+        "Tanzania": "United L.Tanzania",
+    }
+
+    to_be_added = [
+        "Cook Islands",
+        "Monaco",
+        "Nauru",
+        "Niue",
+        "Palau",
+        "Saint Kitts and Nevis",
+        "San Marino",
+        "Tuvalu",
+    ]
+
+    # Add countries
+    sample_row = df.iloc[1].copy()
+    sample_row.at["Value"] = 0
+    sample_row.at["Lower bound"] = 0
+    sample_row.at["Upper bound"] = 0
+
+    for x in to_be_added:
+        sample_row.at["Location"] = x
+        df = pd.concat([df, sample_row.to_frame().T], ignore_index=True)
+
+    # Drop countries
+    locations = df["Location"].drop_duplicates().tolist()
+    locations = [x for x in locations if x not in to_be_dropped]
+    df = df.set_index("Location")
+    df = df.loc[locations]
+
+    # Rename countries
+    labels = df.index.values
+    new_labels = list(
+        map(lambda x: to_be_renamed[x] if x in to_be_renamed else x, labels)
+    )
+
+    df = df.set_axis(new_labels, axis="index")
+    df.index.name = "Location"
+    df = df.reset_index()
+    df = df.sort_values(by="Location")
+    df = df.reset_index()
+    df = df.drop(columns=["index"])
+    # print(df)
+
+    # Verify countries match with those of original projection files
+    all_age_df = pd.read_csv("D:\\CMIP6_data\\Mortality\\Mortality Projections_2040\\allcause_rate.csv")
+    all_age_locations = all_age_df["Location"].values
+    locations = df["Location"].values
+    # qb.South Korea in all-age projection, but Qb.South Korea in age-specific projections
+    assert [x for x in locations if x not in all_age_locations] == ["Qb.South Korea"]
+    assert [x for x in all_age_locations if x not in locations] == ["qb.South Korea"]
+
+    return df
+
+
+def post_process():
+    """Clean the downloaded data for it to be used by mortality scripts"""
+    year = 2040
+    for age in ages:
+
+        for disease in diseases:
+
+            download_file = os.path.join(
+                download_path, str(year), disease, f"{age}.csv"
+            )
+            df = pd.read_csv(download_file)
+
+            # Remove last three rows of metadata
+            df = df.iloc[:-3, :]
+
+            # Rename countries
+            df = rename_helper(df)
+
+            # Output post-processed version to folder
+            mort_output_path = os.path.join(mort_path, str(year), disease)
+            os.makedirs(mort_output_path, exist_ok=True)
+            mort_file = os.path.join(mort_output_path, f"{age}.csv")
+            df.to_csv(mort_file)
+
+            print(f"Done: {age}, {disease}")
+
+
 def main():
-    download()
+    # download()
+    post_process()
 
 
 if __name__ == "__main__":
