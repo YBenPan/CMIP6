@@ -9,31 +9,31 @@ import shutil
 import os
 import pandas as pd
 
-diseases = ["Allcause", "COPD", "Dementia", "IHD", "LRI", "LC", "Stroke", "T2D"]
+diseases = ["Allcause", "COPD", "Dementia", "IHD", "LRI", "LC", "NCD", "Stroke", "T2D"]
 # How to get disease id:
 # Important: do not type anything in the search bar of causes
 # Select dropdown item to inspect
 # Copy XPath of <li> element
-disease_ids = [1, 126, 152, 111, 12, 85, 112, 167]
+disease_ids = [1, 126, 152, 111, 12, 85, 69, 112, 167]
 download_path = "D:\CMIP6_data\Mortality\All Age Mortality Projections_2040_dl"
 mort_path = "D:\CMIP6_data\Mortality\All Age Mortality Projections_2040"
 
 ages = [
-    "25-29",
-    "30-34",
-    "35-39",
-    "40-44",
-    "45-49",
-    "50-54",
-    "55-59",
-    "60-64",
-    "65-69",
-    "70-74",
-    "75-79",
-    "80-84",
-    "85-89",
-    "90-94",
-    "95+",
+    "25-29 years",
+    "30-34 years",
+    "35-39 years",
+    "40-44 years",
+    "45-49 years",
+    "50-54 years",
+    "55-59 years",
+    "60-64 years",
+    "65-69 years",
+    "70-74 years",
+    "75-79 years",
+    "80-84 years",
+    "85-89 years",
+    "90-94 years",
+    "95+ years",
 ]
 
 age_urls = [
@@ -173,6 +173,7 @@ def rename_helper(df):
         "Puerto Rico": "Zz.Puerto Rico",
         "Russian Federation": "Russia",
         "Tanzania": "United L.Tanzania",
+        "Cote d'Ivoire": "Côte d'Ivoire",
     }
 
     to_be_added = [
@@ -217,12 +218,13 @@ def rename_helper(df):
     # print(df)
 
     # Verify countries match with those of original projection files
-    all_age_df = pd.read_csv("D:\\CMIP6_data\\Mortality\\Mortality Projections_2040\\allcause_rate.csv")
-    all_age_locations = all_age_df["Location"].values
-    locations = df["Location"].values
-    # qb.South Korea in all-age projection, but Qb.South Korea in age-specific projections
-    assert [x for x in locations if x not in all_age_locations] == ["Qb.South Korea"]
-    assert [x for x in all_age_locations if x not in locations] == ["qb.South Korea"]
+    # country_df = pd.read_csv("D:\\CMIP6_data\\countryvalue_blank.csv")
+    # country_locations = country_df["COUNTRY"].values
+    # locations = df["Location"].values
+    # for location, country_location in zip(locations, country_locations):
+    #     if location != country_location:
+    #         print(f"{location} in age-specific vs {country_location} in all-age")
+    # input()
 
     return df
 
