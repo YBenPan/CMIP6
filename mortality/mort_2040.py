@@ -319,12 +319,60 @@ def subnational_output():
             print(f"DONE: {country_long_name}, {disease_name}")
 
 
-def national_output():
+def compare(j, k, age_group, disease_name, natl_2015, aa_natl_2040, natl_2040):
+
+    country_names = natl_2040["Location"]
+
+    aa_natl_2015_val = aa_natl_2040.iloc[j]["Deaths.2016.Number"]
+    aa_natl_2040_val = aa_natl_2040.iloc[j]["Deaths.2040.Number"]
+    if aa_natl_2015_val == 0 or np.isnan(aa_natl_2015_val) or aa_natl_2040_val == 0 or np.isnan(aa_natl_2040_val):
+        ratio = 0
+    else:
+        ratio = aa_natl_2040_val / aa_natl_2015_val
+
+    # Retrive mortality corresponding to correct age group and country in 2015
+    tmp = natl_2015.iloc[j * len(age_groups) + k]
+    aa_mort = tmp["val"]
+    # print(f"{disease_name}, {j}, {age_group}: 2015 {aa_mort}")
+
+    # Apply ratio to evolve 2015 mortality rate forward to 2040 using all-age projections
+    aa_mort *= ratio
+
+    # Retrive mortality in 2040 from age-specific projections
+    as_mort = natl_2040.iloc[j]["Value"]
+    
+    if aa_mort < as_mort:
+        print(f"{disease_name}, {country_names[j]}, {age_group}: AS/AA = {np.round(as_mort / aa_mort, 1)}")
+        # input()
+
+
+def national_output(compare_proj=False):
     """Outputs gridded mortality baseline for all countries in 2040"""
 
     for disease, disease_name in zip(diseases, disease_names):
 
         data = np.zeros((15, len(data_types_2040), len(latitude), len(longitude)))
+
+        if compare_proj:
+            if disease_name in ["Allcause", "Dementia"]:
+                continue
+
+            # Import national baseline data from 2015
+            national_baseline_file = f"{disease_name}.csv"
+            try:
+                natl_2015 = pd.read_csv(national_baseline_path + national_baseline_file)
+            except:
+                print(f"Error importing {disease_name} at {national_baseline_path + national_baseline_file}")
+            natl_2015 = rename_helper(natl_2015)
+            natl_2015 = natl_2015[
+                (natl_2015["year"] == 2015) & (natl_2015["metric_name"] == "Rate")]
+            natl_2015 = natl_2015.drop(columns=["metric_name", "year"])
+            natl_2015 = natl_2015.sort_values(['location_name', 'age_name'])   
+
+            # Import all-age national baseline projection from 2040
+            aa_national_projection_path = "D:/CMIP6_data/Mortality/Mortality Projections_2040/"
+            aa_national_projection_file = f"{disease}_rate.csv" if disease != "T2D" else "diabetes_rate.csv"
+            aa_natl_2040 = pd.read_csv(aa_national_projection_path + aa_national_projection_file, usecols=[2, 18, 19, 20, 21, 22, 23])
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -335,7 +383,7 @@ def national_output():
                 national_projection_file = os.path.join(
                     national_projection_path, "2040", disease, f"{age_group}.csv"
                 )
-                natl_2040 = pd.read_csv(national_projection_file, usecols=[1, 7, 8, 9])
+                natl_2040 = pd.read_csv(national_projection_file, usecols=[1, 2, 7, 8, 9])
                 natl_2040 = natl_2040.fillna(0)
 
                 for p, data_type_2040 in enumerate(data_types_2040):
@@ -349,6 +397,9 @@ def national_output():
                         break
 
                     data[k, p, :, :] += fractionCountry[j, :, :] * mort
+
+                if compare_proj:
+                    compare(j, k, age_group, disease_name, natl_2015, aa_natl_2040, natl_2040)
 
         output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by 5-year age groups with national-level data only in 2040"
         output_path = (
