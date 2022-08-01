@@ -163,100 +163,53 @@ def decompose(factor_name, factors, ssp, region, countries):
         ages, diseases = init_by_factor(factor_name, factor)
         if factor_name == "SSP":
             ssp = factor
-        ref = mort(
-            pop="2010",
-            baseline="2015",
-            year=2015,
-            ssp=ssp,
-            ages=ages,
-            diseases=diseases,
-            countries=countries,
-        )
-        delta = mort(
-            pop="var",
-            baseline="2040",
-            year=2040,
-            ssp=ssp,
-            ages=ages,
-            diseases=diseases,
-            countries=countries,
-        ) - mort(
-            pop="2010",
-            baseline="2015",
-            year=2015,
-            ssp=ssp,
-            ages=ages,
-            diseases=diseases,
-            countries=countries,
+        ref = mort("2010", "2015", 2015, ssp, ages, diseases, countries)
+        delta = mort("var", "2040", 2040, ssp, ages, diseases, countries) - mort(
+            "2010", "2015", 2015, ssp, ages, diseases, countries
         )
 
-        # JF Method: (Pop 2010, Base 2015, Year 2015) -> PM2.5 Contribution
-        #            (Pop 2010, Base 2015, Year 2040) -> Baseline Mortality Contribution
-        #            (Pop 2010, Base 2040, Year 2040) -> Population Contribution
-        #            (Pop var, Base 2040, Year 2040)
-        pm_contribution = mort(
-            pop="2010",
-            baseline="2015",
-            year=2040,
-            ssp=ssp,
-            ages=ages,
-            diseases=diseases,
-            countries=countries,
-        ) - mort(
-            pop="2010",
-            baseline="2015",
-            year=2015,
-            ages=ages,
-            ssp=ssp,
-            diseases=diseases,
-            countries=countries,
+        # Method: (Pop 2010, Base 2015, Year 2015) -> PM2.5 Contribution
+        #         (Pop 2010, Base 2015, Year 2040) -> Baseline Mortality Contribution
+        #         (Pop 2010, Base 2040, Year 2040) -> Population Contribution by age groups
+        #         (Pop var, Base 2040, Year 2040)
+        pm_contrib = mort("2010", "2015", 2040, ssp, ages, diseases, countries) - mort(
+            "2010", "2015", 2015, ssp, ages, diseases, countries
         )
-        baseline_contribution = mort(
-            pop="2010",
-            baseline="2040",
-            year=2040,
-            ssp=ssp,
-            ages=ages,
-            diseases=diseases,
-            countries=countries,
-        ) - mort(
-            pop="2010",
-            baseline="2015",
-            year=2040,
-            ssp=ssp,
-            ages=ages,
-            diseases=diseases,
-            countries=countries,
-        )
-        pop_25_60_contribution = mort(
+        baseline_contrib = mort(
+            "2010", "2040", 2040, ssp, ages, diseases, countries
+        ) - mort("2010", "2015", 2040, ssp, ages, diseases, countries)
+        pop_25_60_contrib = mort(
             "var", "2040", 2040, ssp, ages_25_60, diseases, countries
         ) - mort("2010", "2040", 2040, ssp, ages_25_60, diseases, countries)
-        pop_60_80_contribution = mort(
+        pop_60_80_contrib = mort(
             "var", "2040", 2040, ssp, ages_60_80, diseases, countries
         ) - mort("2010", "2040", 2040, ssp, ages_60_80, diseases, countries)
-        pop_80plus_contribution = mort(
+        pop_80plus_contrib = mort(
             "var", "2040", 2040, ssp, ages_80plus, diseases, countries
         ) - mort("2010", "2040", 2040, ssp, ages_80plus, diseases, countries)
 
-        pm_percent = np.round(pm_contribution / ref * 100, 1)
-        baseline_percent = np.round(baseline_contribution / ref * 100, 1)
-        pop_25_60_percent = np.round(pop_25_60_contribution / ref * 100, 1)
-        pop_60_80_percent = np.round(pop_60_80_contribution / ref * 100, 1)
-        pop_80plus_percent = np.round(pop_80plus_contribution / ref * 100, 1)
-        delta_percent = np.round(delta / ref * 100, 1)
+        # Calculate contribution in percent
+        pm_pct = np.round(pm_contrib / ref * 100, 1)
+        baseline_pct = np.round(baseline_contrib / ref * 100, 1)
+        pop_25_60_pct = np.round(pop_25_60_contrib / ref * 100, 1)
+        pop_60_80_pct = np.round(pop_60_80_contrib / ref * 100, 1)
+        pop_80plus_pct = np.round(pop_80plus_contrib / ref * 100, 1)
+        delta_pct = np.round(delta / ref * 100, 1)
 
-        pms.append(pm_percent)
-        baselines.append(baseline_percent)
-        pops_25_60.append(pop_25_60_percent)
-        pops_60_80.append(pop_60_80_percent)
-        pops_80plus.append(pop_80plus_percent)
-        deltas.append(delta_percent)
+        pms.append(pm_pct)
+        baselines.append(baseline_pct)
+        pops_25_60.append(pop_25_60_pct)
+        pops_60_80.append(pop_60_80_pct)
+        pops_80plus.append(pop_80plus_pct)
+        deltas.append(delta_pct)
 
         print(f"{ssp}, {region}, {factor}:")
-        print(f"PM Contribution: {pm_percent}%;")
-        print(f"Baseline Contribution: {baseline_percent}%;")
-        print(f"Pop Contribution: {pop_25_60_percent}%, {pop_60_80_percent}%, {pop_80plus_percent}%;")
-        print(f"Overall Change: {delta_percent}%")
+        print(f"PM Contribution: {pm_pct}%;")
+        print(f"Baseline Contribution: {baseline_pct}%;")
+        print(
+            f"Pop Contribution: {pop_25_60_pct}%, {pop_60_80_pct}%, {pop_80plus_pct}%;"
+        )
+        print(f"Overall Change: {delta_pct}%")
         print()
 
     return pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas
@@ -309,7 +262,7 @@ def visualize(factor_name, factors):
                 {
                     "Region": region,
                     factor_name: factors,
-                    "SSP": ssp,
+                    # "SSP": ssp,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
                     "Population 25-60": pops_25_60,
@@ -375,10 +328,9 @@ def visualize(factor_name, factors):
 
         output_file = f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}.png"
         plt.savefig(output_file)
+        overall_df = overall_df.append(ssp_df)
         if factor_name == "SSP":
             break
-
-        overall_df = overall_df.append(ssp_df)
 
     output_file = os.path.join(output_dir, f"{factor_name}.csv")
     overall_df = overall_df.reset_index(drop=True)
@@ -387,11 +339,12 @@ def visualize(factor_name, factors):
 
 def main():
     # Choose factor
-    factor_name = "Disease"
+    factor_name = "SSP"
     if factor_name == "Disease":
         factors = diseases
     elif factor_name == "Age":
-        factors = age_groups
+        raise Exception("Plotting by age still in development")
+        # factors = age_groups
     elif factor_name == "SSP":
         factors = ssps
     else:
