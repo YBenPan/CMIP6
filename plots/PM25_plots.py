@@ -303,7 +303,7 @@ def map_delta(type="Concentration"):
         ):
 
             fractionRegion = get_countries_mask(countries=countries)
-            tot_area  = np.sum(fractionRegion)
+            tot_area = np.sum(fractionRegion)
 
             conc_2015, awm_2015, pwm_2015 = mean(
                 ssp, 2015, fractionRegion, type="PM2.5 Concentration"
@@ -316,7 +316,7 @@ def map_delta(type="Concentration"):
             abs_change_data[j, i] = uwm_2040 - uwm_2015
             print(f"{region}: UWM Change: {abs_change_data[j, i]}")
 
-        tot_area  = np.sum(fractionCountries)
+        tot_area = np.sum(fractionCountries)
         conc_2015, awm_2015, pwm_2015 = mean(
             ssp, 2015, fractionCountries, type="PM2.5 Concentration"
         )
@@ -385,9 +385,10 @@ def map_delta(type="Concentration"):
 def main():
     # line()
     # map()
-    # output_means(regions, region_countries, region_countries_names)
-    map_year(year=2040, type="Concentration")
+    output_means(regions, region_countries, region_countries_names)
+    # map_year(year=2040, type="Concentration")
     # map_delta(type="Concentration")
+
 
 if __name__ == "__main__":
     main()
