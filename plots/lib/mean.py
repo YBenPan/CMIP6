@@ -130,7 +130,10 @@ def get_means(regions, region_countries, region_countries_names, ssp, year, type
         # Get grid areas for area weighted mean
         grid_area, tot_area = get_grid_area(fractionCountries)
 
-        # Get population for population weighted mean
+        # Get population for population weighted mean for verification
+        pop, tot_pop = get_pop(ssp, year, fractionCountries)
+        print(f"{region} population: {int(np.round(tot_pop, -6))} area: {int(tot_area)}")
+
         conc, awm, pwm, conc_std, awm_std, pwm_std = mean(
             ssp, year, fractionCountries, type
         )
@@ -144,7 +147,7 @@ def get_means(regions, region_countries, region_countries_names, ssp, year, type
 
 
 def output_means(regions, region_countries, region_countries_names):
-    """Output the means and standard deivations of input regions"""
+    """Output the means and standard deivations of input regions in ssp245"""
     awms, pwms, awms_std, pwms_std = get_means(
         regions,
         region_countries,
