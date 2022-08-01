@@ -27,17 +27,6 @@ age_groups = ["25-60", "60-80", "80+", "25+"]
 country_dict = get_country_names()
 regions, region_countries, region_countries_names = get_regions()
 
-# Choose factor
-factor_name = "Disease"
-if factor_name == "Disease":
-    factors = diseases
-elif factor_name == "Age":
-    factors = age_groups
-elif factor_name == "SSP":
-    factors = ssps
-else:
-    raise NameError(f"{factor_name} not found!")
-
 
 def get_models(ssp):
     """Get all models from given ssp"""
@@ -80,7 +69,9 @@ def mort(
     if countries is None:
         countries = [-1]
     ages = ["all_age_Mean"] if ages is None else ages
-    diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
+    diseases = (
+        ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
+    )
     year = str(year)
     models = get_models(ssp)
     factor_values = []
@@ -143,7 +134,30 @@ def decompose(factor_name, factors, ssp, region, countries):
     """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
     pms = []
     baselines = []
-    pops = []
+    pops_25_60 = []
+    ages_25_60 = [
+        "age_25_29_Mean",
+        "age_30_34_Mean",
+        "age_35_39_Mean",
+        "age_40_44_Mean",
+        "age_45_49_Mean",
+        "age_50_54_Mean",
+        "age_55_59_Mean",
+    ]
+    pops_60_80 = []
+    ages_60_80 = [
+        "age_60_64_Mean",
+        "age_65_69_Mean",
+        "age_70_74_Mean",
+        "age_75_79_Mean",
+    ]
+    pops_80plus = []
+    ages_80plus = [
+        "age_80_84_Mean",
+        "age_85_89_Mean",
+        "age_90_94_Mean",
+        "post95_Mean",
+    ]
     deltas = []
     for factor in factors:
         ages, diseases = init_by_factor(factor_name, factor)
@@ -176,9 +190,9 @@ def decompose(factor_name, factors, ssp, region, countries):
             countries=countries,
         )
 
-        # JF Method: (Pop 2010, Base 2015, Year 2015) ->
-        #            (Pop 2010, Base 2015, Year 2040) ->
-        #            (Pop 2010, Base 2040, Year 2040) ->
+        # JF Method: (Pop 2010, Base 2015, Year 2015) -> PM2.5 Contribution
+        #            (Pop 2010, Base 2015, Year 2040) -> Baseline Mortality Contribution
+        #            (Pop 2010, Base 2040, Year 2040) -> Population Contribution
         #            (Pop var, Base 2040, Year 2040)
         pm_contribution = mort(
             pop="2010",
@@ -201,56 +215,54 @@ def decompose(factor_name, factors, ssp, region, countries):
             pop="2010",
             baseline="2040",
             year=2040,
-            ages=ages,
             ssp=ssp,
+            ages=ages,
             diseases=diseases,
             countries=countries,
         ) - mort(
             pop="2010",
             baseline="2015",
             year=2040,
-            ages=ages,
             ssp=ssp,
+            ages=ages,
             diseases=diseases,
             countries=countries,
         )
-        pop_contribution = mort(
-            pop="var",
-            baseline="2040",
-            year=2040,
-            ages=ages,
-            ssp=ssp,
-            diseases=diseases,
-            countries=countries,
-        ) - mort(
-            pop="2010",
-            baseline="2040",
-            year=2040,
-            ages=ages,
-            ssp=ssp,
-            diseases=diseases,
-            countries=countries,
-        )
+        pop_25_60_contribution = mort(
+            "var", "2040", 2040, ssp, ages_25_60, diseases, countries
+        ) - mort("2010", "2040", 2040, ssp, ages_25_60, diseases, countries)
+        pop_60_80_contribution = mort(
+            "var", "2040", 2040, ssp, ages_60_80, diseases, countries
+        ) - mort("2010", "2040", 2040, ssp, ages_60_80, diseases, countries)
+        pop_80plus_contribution = mort(
+            "var", "2040", 2040, ssp, ages_80plus, diseases, countries
+        ) - mort("2010", "2040", 2040, ssp, ages_80plus, diseases, countries)
 
         pm_percent = np.round(pm_contribution / ref * 100, 1)
         baseline_percent = np.round(baseline_contribution / ref * 100, 1)
-        pop_percent = np.round(pop_contribution / ref * 100, 1)
+        pop_25_60_percent = np.round(pop_25_60_contribution / ref * 100, 1)
+        pop_60_80_percent = np.round(pop_60_80_contribution / ref * 100, 1)
+        pop_80plus_percent = np.round(pop_80plus_contribution / ref * 100, 1)
         delta_percent = np.round(delta / ref * 100, 1)
 
         pms.append(pm_percent)
         baselines.append(baseline_percent)
-        pops.append(pop_percent)
+        pops_25_60.append(pop_25_60_percent)
+        pops_60_80.append(pop_60_80_percent)
+        pops_80plus.append(pop_80plus_percent)
         deltas.append(delta_percent)
 
-        print(
-            f"{ssp}, {region}, {factor}: PM Contribution: {pm_percent}%; Population Contribution: "
-            f"{pop_percent}%; Baseline Contribution: {baseline_percent}%"
-        )
-        print(f"{ssp}, {region}, {factor}: Overall Change: {delta_percent}%")
-    return pms, baselines, pops, deltas
+        print(f"{ssp}, {region}, {factor}:")
+        print(f"PM Contribution: {pm_percent}%;")
+        print(f"Baseline Contribution: {baseline_percent}%;")
+        print(f"Pop Contribution: {pop_25_60_percent}%, {pop_60_80_percent}%, {pop_80plus_percent}%;")
+        print(f"Overall Change: {delta_percent}%")
+        print()
+
+    return pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas
 
 
-def visualize():
+def visualize(factor_name, factors):
     """Driver program for visualization/output"""
 
     sns.set()
@@ -284,7 +296,7 @@ def visualize():
             ax = axes[j, k]
 
             # Compute contributions
-            pms, baselines, pops, deltas = decompose(
+            pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas = decompose(
                 factor_name=factor_name,
                 factors=factors,
                 ssp=ssp,
@@ -300,13 +312,22 @@ def visualize():
                     "SSP": ssp,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
-                    "Population": pops,
+                    "Population 25-60": pops_25_60,
+                    "Population 60-80": pops_60_80,
+                    "Population 80+": pops_80plus,
                     "Overall": deltas,
                 },
             )
             ssp_df = ssp_df.append(df)
             wk_df = df[
-                [factor_name, "PM2.5 Concentration", "Baseline Mortality", "Population"]
+                [
+                    factor_name,
+                    "PM2.5 Concentration",
+                    "Baseline Mortality",
+                    "Population 25-60",
+                    "Population 60-80",
+                    "Population 80+",
+                ]
             ]
             wk_df = wk_df.sort_index(axis=1)
             wk_df.plot(
@@ -314,7 +335,13 @@ def visualize():
                 kind="bar",
                 stacked=True,
                 ax=ax,
-                color=["gold", "cornflowerblue", "lightgreen"],
+                color=[
+                    "gold",
+                    "cornflowerblue",
+                    "lightgreen",
+                    "green",
+                    "darkolivegreen",
+                ],
             )
 
             # Plot dots representing overall change in mortality
@@ -333,9 +360,11 @@ def visualize():
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
         labels = [
-            "Change in mortality due to Baseline Mortality",
-            "Change in mortality due to PM2.5 Concentration",
-            "Change in mortality due to Population",
+            "PM2.5 Concentration",
+            "Baseline Mortality",
+            "Population 25-60",
+            "Population 60-80",
+            "Population 80+",
         ]
         fig.legend(handles, labels, loc="upper right")
         for i, ax in enumerate(axes.flatten()):
@@ -344,13 +373,11 @@ def visualize():
             ax = ax.get_legend().remove()
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
-        output_file = (
-            f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}.png"
-        )
+        output_file = f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}.png"
         plt.savefig(output_file)
         if factor_name == "SSP":
             break
-        
+
         overall_df = overall_df.append(ssp_df)
 
     output_file = os.path.join(output_dir, f"{factor_name}.csv")
@@ -359,7 +386,17 @@ def visualize():
 
 
 def main():
-    visualize()
+    # Choose factor
+    factor_name = "Disease"
+    if factor_name == "Disease":
+        factors = diseases
+    elif factor_name == "Age":
+        factors = age_groups
+    elif factor_name == "SSP":
+        factors = ssps
+    else:
+        raise NameError(f"{factor_name} not found!")
+    visualize(factor_name, factors)
 
 
 if __name__ == "__main__":
