@@ -30,28 +30,23 @@ def get_regions():
         "Southern Latin America": Southern_Latin_America,
         "Australasia": Australasia,
         "High-income Asia Pacific": High_income_Asia_Pacific,
-        "High-income North America": High_income_North_America,        
+        "High-income North America": High_income_North_America,
         "W. Europe": Western_Europe,
-
         "Central Europe": Central_Europe,
         "E. Europe": Eastern_Europe,
         "Central Asia": Central_Asia,
-
         "Caribbean": Caribbean,
         "Central Latin America": Central_Latin_America,
         "Tropical Latin America": Tropical_Latin_America,
         "Andean Latin America": Andean_Latin_America,
-
         "South Asia": South_Asia,
         "East Asia": East_Asia,
         "S.E. Asia": Southeast_Asia,
-
         "N. Africa and Middle East": North_Africa_and_Middle_East,
         "Central Africa": Central_Sub_Saharan_Africa,
         "E. Africa": Eastern_Sub_Saharan_Africa,
         "S. Africa": Southern_Sub_Saharan_Africa,
         "W. Africa": Western_Sub_Saharan_Africa,
-
         "World": ["World"],
     }
     region_countries_names = list(region_countries_dict.values())

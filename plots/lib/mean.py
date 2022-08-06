@@ -132,7 +132,9 @@ def get_means(regions, region_countries, region_countries_names, ssp, year, type
 
         # Get population for population weighted mean for verification
         pop, tot_pop = get_pop(ssp, year, fractionCountries)
-        print(f"{region} population: {int(np.round(tot_pop, -6))} area: {int(tot_area)}")
+        print(
+            f"{region} population: {int(np.round(tot_pop, -6))} area: {int(tot_area)}"
+        )
 
         conc, awm, pwm, conc_std, awm_std, pwm_std = mean(
             ssp, year, fractionCountries, type

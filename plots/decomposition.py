@@ -21,7 +21,7 @@ output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
-output_type = "absolute" # or "pct"
+output_type = "absolute"  # or "pct"
 
 
 # Get countries and regions
@@ -176,9 +176,9 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
         pm = mort("2010", "2015", 2040, ssp, ages, diseases, countries) - mort(
             "2010", "2015", 2015, ssp, ages, diseases, countries
         )
-        baseline = mort(
-            "2010", "2040", 2040, ssp, ages, diseases, countries
-        ) - mort("2010", "2015", 2040, ssp, ages, diseases, countries)
+        baseline = mort("2010", "2040", 2040, ssp, ages, diseases, countries) - mort(
+            "2010", "2015", 2040, ssp, ages, diseases, countries
+        )
         pop_25_60 = mort(
             "var", "2040", 2040, ssp, ages_25_60, diseases, countries
         ) - mort("2010", "2040", 2040, ssp, ages_25_60, diseases, countries)
@@ -208,9 +208,7 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
         print(f"{ssp}, {region}, {factor}:")
         print(f"PM Contribution: {pm};")
         print(f"Baseline Contribution: {baseline};")
-        print(
-            f"Pop Contribution: {pop_25_60}, {pop_60_80}, {pop_80plus};"
-        )
+        print(f"Pop Contribution: {pop_25_60}, {pop_60_80}, {pop_80plus};")
         print(f"Overall Change: {delta}")
         print()
 
@@ -252,12 +250,7 @@ def visualize(factor_name, factors):
 
             # Compute contributions
             pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas = decompose(
-                factor_name,
-                factors,
-                ssp,
-                region,
-                countries,
-                output_type
+                factor_name, factors, ssp, region, countries, output_type
             )
             # Visualize with a stacked bar plot
 
