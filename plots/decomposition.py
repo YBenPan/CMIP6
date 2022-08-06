@@ -19,7 +19,7 @@ diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
 change_type = "pct"  # "absolute" or "pct"
 region_source = "SDI"
-factor_name = "SSP"
+factor_name = "Disease"
 
 # Choose factor
 if factor_name == "Disease":
@@ -232,27 +232,31 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
 def visualize():
     """Driver program for visualization/output"""
 
-    sns.set()
+    sns.set_style("ticks")
 
     overall_df = pd.DataFrame()
 
     for ssp in ssps:
 
+        # Plotting Settings
+
         if region_source == "GBD":
             rows = 5
             cols = 5
+            ymin = -100
+            ymax = 400
+            fig, axes = plt.subplots(rows, cols, figsize=(20, 25))
         elif region_source == "SDI":
             rows = 3
             cols = 2
+            ymin = -50
+            ymax = 250
+            fig, axes = plt.subplots(rows, cols, figsize=(10, 12.5))
 
         # Initialize plotting
-        fig, axes = plt.subplots(rows, cols, figsize=(20, 25))
         fig.suptitle(
             f"Decomposition of changes in PM2.5-attributable mortality from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''} by factor"
         )
-        # Plotting Settings
-        ymin = -100
-        ymax = 400
 
         ssp_df = pd.DataFrame()
 
@@ -315,14 +319,27 @@ def visualize():
             sns.scatterplot(
                 x=factor_name, y="Overall", data=df, ax=ax, color="orangered"
             )
+
+            # Plot dotted line at 0%
+            ax.axhline(0, ls="--", color="black")
+
+            # Set labels and tick labels
             ax.set_ylim([ymin, ymax])
             ax.set_title(region)
+            ax.set_xlabel("")
             ax.set_ylabel("")
-            ax.set_xlabel(factor_name)
-            ax.set_yticklabels(["-100%", "0%", "100%", "200%", "300%", "400%"])
-
-            if factor_name == "SSP":
-                ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            if k == 0:
+                if region_source == "GBD":
+                    ax.set_yticklabels(["-100%", "0%", "100%", "200%", "300%", "400%"])
+                elif region_source == "SDI":
+                    ax.set_yticklabels(["-50%", "0%", "50%", "100%", "150%", "200%", "250%"])
+                ax.set_ylabel("Pct Change")
+            if j == rows - 1:
+                ax.set_xlabel(factor_name)
+                if factor_name == "SSP":
+                    ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
 
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
@@ -339,6 +356,7 @@ def visualize():
                 continue
             ax = ax.get_legend().remove()
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
+        sns.despine()
 
         output_file = f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}_{change_type}.png"
         if change_type == "pct":
