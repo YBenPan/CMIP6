@@ -12,21 +12,35 @@ from lib.helper import pop_ssp_dict, init_by_factor
 #### CREATE DECOMPOSITION GRAPHS OF MORTALITY
 ####################################################################################################
 
-# General Settings
-parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
-home_dir = "/home/ybenp"
-output_dir = "/home/ybenp/CMIP6_Images/Mortality/decomposition"
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
-output_type = "absolute"  # or "pct"
+change_type = "pct"  # "absolute" or "pct"
+region_source = "SDI"
+factor_name = "SSP"
+
+# Choose factor
+if factor_name == "Disease":
+    factors = diseases
+elif factor_name == "Age":
+    raise Exception("Plotting by age still in development")
+    # factors = age_groups
+elif factor_name == "SSP":
+    factors = ssps
+else:
+    raise NameError(f"{factor_name} not found!")
+
+# General Settings
+parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
+home_dir = "/home/ybenp"
+output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/{region_source}"
 
 
 # Get countries and regions
 country_dict = get_country_names()
-regions, region_countries, region_countries_names = get_regions()
+regions, region_countries, region_countries_names = get_regions(region_source)
 
 
 def get_models(ssp):
@@ -215,7 +229,7 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
     return pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas
 
 
-def visualize(factor_name, factors):
+def visualize():
     """Driver program for visualization/output"""
 
     sns.set()
@@ -224,8 +238,12 @@ def visualize(factor_name, factors):
 
     for ssp in ssps:
 
-        rows = 5
-        cols = 5
+        if region_source == "GBD":
+            rows = 5
+            cols = 5
+        elif region_source == "SDI":
+            rows = 3
+            cols = 2
 
         # Initialize plotting
         fig, axes = plt.subplots(rows, cols, figsize=(20, 25))
@@ -250,7 +268,7 @@ def visualize(factor_name, factors):
 
             # Compute contributions
             pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas = decompose(
-                factor_name, factors, ssp, region, countries, output_type
+                factor_name, factors, ssp, region, countries, change_type
             )
             # Visualize with a stacked bar plot
 
@@ -258,7 +276,7 @@ def visualize(factor_name, factors):
                 {
                     "Region": region,
                     factor_name: factors,
-                    "SSP": ssp,
+                    # "SSP": ssp,
                     "PM2.5 Concentration": pms,
                     "Baseline Mortality": baselines,
                     "Population 25-60": pops_25_60,
@@ -322,31 +340,20 @@ def visualize(factor_name, factors):
             ax = ax.get_legend().remove()
         fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
 
-        output_file = f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}_{output_type}.png"
-        if output_type == "pct":
+        output_file = f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}_{change_type}.png"
+        if change_type == "pct":
             plt.savefig(output_file)
         overall_df = overall_df.append(ssp_df)
         if factor_name == "SSP":
             break
 
-    output_file = os.path.join(output_dir, f"{factor_name}_{output_type}.csv")
+    output_file = os.path.join(output_dir, f"{factor_name}_{change_type}.csv")
     overall_df = overall_df.reset_index(drop=True)
     overall_df.to_csv(output_file, index=False)
 
 
 def main():
-    # Choose factor
-    factor_name = "Disease"
-    if factor_name == "Disease":
-        factors = diseases
-    elif factor_name == "Age":
-        raise Exception("Plotting by age still in development")
-        # factors = age_groups
-    elif factor_name == "SSP":
-        factors = ssps
-    else:
-        raise NameError(f"{factor_name} not found!")
-    visualize(factor_name, factors)
+    visualize()
 
 
 if __name__ == "__main__":

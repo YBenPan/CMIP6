@@ -226,11 +226,10 @@ High_SDI = [
     "Japan",
     "Iceland",
     "Singapore",
-    "Taiwan (province of China)",
+    # "Taiwan (province of China)",
     "Ireland",
     "United States",
     "Belgium",
-    "England",
     "Austria",
     "United Kingdom",
     "Kuwait",
@@ -245,13 +244,13 @@ High_SDI = [
     "Brunei",
     "Qatar",
     "Latvia",
-    "Bermuda",
+    # "Bermuda",
 ]
 
 High_middle_SDI = [
     "Slovakia",
     "Puerto Rico",
-    "Guam",
+    # "Guam",
     "Israel",
     "Russia",
     "Italy",
@@ -262,24 +261,24 @@ High_middle_SDI = [
     "Croatia",
     "Hungary",
     "Saudi Arabia",
-    "Montenegro",
+    # "Montenegro",
     "Oman",
     "Spain",
-    "Serbia",
-    "Northern Mariana Islands",
+    "Serbia+Montenegro",
+    # "Northern Mariana Islands",
     "Bulgaria",
     "Trinidad and Tobago",
-    "Greenland",
+    # "Greenland",
     "Romania",
     "Cook Islands",
     "Chile",
     "Bahrain",
     "Barbados",
-    "North Macedonia",
+    "Macedonia",
     "Belarus",
     "Ukraine",
     "Portugal",
-    "St. Kitts and Nevis",
+    "St.Kitts+Nevis",
     "Antigua and Barbuda",
     "Palau",
     "Turkey",
@@ -290,7 +289,7 @@ High_middle_SDI = [
     "Libya",
     "Bosnia and Herzegovina",
     "Seychelles",
-    "American Samoa",
+    # "American Samoa",
     "Niue",
 ]
 
@@ -311,7 +310,7 @@ Middle_SDI = [
     "Costa Rica",
     "Panama",
     "China",
-    "St. Lucia",
+    "Saint Lucia",
     "Equatorial Guinea",
     "Tunisia",
     "Grenada",
@@ -351,17 +350,17 @@ Low_middle_SDI = [
     "Dominican Republic",
     "Tuvalu",
     "Federated States of Micronesia",
-    "eSwatini",
-    "Palestine",
+    "Swaziland",
+    # "Palestine",
     "El Salvador",
     "Bolivia",
     "North Korea",
     "Maldives",
-    "Congo (Brazzaville)",
+    "Congo",
     "India",
     "Marshall Islands",
     "Ghana",
-    "Tajikstan",
+    "Tajikistan",
     "Morocco",
     "Guatemala",
     "Timor-Leste",
@@ -397,7 +396,7 @@ Low_SDI = [
     "Solomon Islands",
     "Togo",
     "Papua New Guinea",
-    "Côte d'Ivoire",
+    "Cote d'Ivoire",
     "Uganda",
     "The Gambia",
     "Madagascar",
@@ -405,8 +404,8 @@ Low_SDI = [
     "Senegal",
     "Malawi",
     "Liberia",
-    "South Sudan",
-    "DR Congo",
+    # "South Sudan",
+    "Democratic Republic of the Congo",
     "Guinea-Bissau",
     "Benin",
     "Sierra Leone",
@@ -423,7 +422,7 @@ Low_SDI = [
     "Somalia",
 ]
 
-regions = [
+GBD_regions = [
     # Central Europe, Eastern Europe, and Central Asia
     Central_Asia,
     Central_Europe,
@@ -452,10 +451,15 @@ regions = [
     East_Asia,
     Southeast_Asia,
 ]
+
+SDI_regions = [High_SDI, High_middle_SDI, Middle_SDI, Low_middle_SDI, Low_SDI]
+
+regions = SDI_regions
+
 if all(all(country in country_names for country in countries) for countries in regions):
     print("Check complete: all countries are in the official country list")
 else:
     for countries in regions:
         for country in countries:
             if country not in country_names:
-                print(f"Region {countries}, country {country} not in list!")
+                print(f"Country {country} not in list!")

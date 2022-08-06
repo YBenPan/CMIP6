@@ -21,12 +21,10 @@ def get_country_names():
     return country_dict
 
 
-def get_regions():
+def get_regions(region_source):
     """Return a list of regions with their country IDs and names"""
     country_dict = get_country_names()
-    region_countries_dict = {
-        # Custom region settings
-        # High-income
+    GBD_region_countries_dict = {
         "Southern Latin America": Southern_Latin_America,
         "Australasia": Australasia,
         "High-income Asia Pacific": High_income_Asia_Pacific,
@@ -49,6 +47,22 @@ def get_regions():
         "W. Africa": Western_Sub_Saharan_Africa,
         "World": ["World"],
     }
+    SDI_region_countries_dict = {
+        "High SDI": High_SDI,
+        "High-middle SDI": High_middle_SDI,
+        "Middle SDI": Middle_SDI,
+        "Low-middle SDI": Low_middle_SDI,
+        "Low SDI": Low_SDI,
+        "World": ["World"],
+    }
+
+    if region_source == "GBD":
+        region_countries_dict = GBD_region_countries_dict
+    elif region_source == "SDI":
+        region_countries_dict = SDI_region_countries_dict
+    else:
+        raise Exception(f"Invalid region source {region_source}")
+
     region_countries_names = list(region_countries_dict.values())
     regions = list(region_countries_dict.keys())
     region_countries = [
