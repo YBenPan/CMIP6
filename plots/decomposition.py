@@ -15,9 +15,9 @@ from lib.helper import pop_ssp_dict, init_by_factor
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
-change_type = "pct"  # "absolute" or "pct"
+change_type = "absolute"  # "absolute" or "pct"
 region_source = "SDI"
 factor_name = "Disease"
 
@@ -35,7 +35,8 @@ else:
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 home_dir = "/home/ybenp"
-output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/{region_source}"
+output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition_new/{region_source}"
+os.makedirs(output_dir, exist_ok=True)
 
 
 # Get countries and regions
@@ -87,6 +88,7 @@ def mort(
     diseases = (
         ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
     )
+    baseline = str(baseline)
     year = str(year)
     models = get_models(ssp)
     factor_values = []
@@ -95,13 +97,13 @@ def mort(
     for model in models:
 
         # Search Allcause first to get the number of files/realizations in the model
-        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/Allcause_mean/all_ages_{model}_*_{year}_GEMM.csv"
+        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National{'_GBD' if baseline == '2040' else ''}/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/Allcause_mean/all_ages_{model}_*_{year}_GEMM.csv"
         files = sorted(glob(search_str))
         model_values = np.zeros(len(files))
 
         for disease in diseases:
 
-            search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
+            search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National{'_GBD' if baseline == '2040' else ''}/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
             files = sorted(glob(search_str))
 
             for j, file in enumerate(files):
@@ -243,15 +245,17 @@ def visualize():
         if region_source == "GBD":
             rows = 5
             cols = 5
-            ymin = -100
-            ymax = 400
             fig, axes = plt.subplots(rows, cols, figsize=(20, 25))
         elif region_source == "SDI":
             rows = 3
             cols = 2
-            ymin = -50
-            ymax = 250
-            fig, axes = plt.subplots(rows, cols, figsize=(10, 12.5))
+            fig, axes = plt.subplots(rows, cols, figsize=(12, 15))
+        if factor_name == "SSP":
+            ymin = -75
+            ymax = 150
+        else:
+            ymin = -100
+            ymax = 200
 
         # Initialize plotting
         fig.suptitle(
@@ -276,19 +280,20 @@ def visualize():
             )
             # Visualize with a stacked bar plot
 
-            df = pd.DataFrame(
-                {
-                    "Region": region,
-                    factor_name: factors,
-                    # "SSP": ssp,
-                    "PM2.5 Concentration": pms,
-                    "Baseline Mortality": baselines,
-                    "Population 25-60": pops_25_60,
-                    "Population 60-80": pops_60_80,
-                    "Population 80+": pops_80plus,
-                    "Overall": deltas,
-                },
-            )
+            df_dict = {
+                "Region": region,
+                factor_name: factors,
+                "PM2.5 Concentration": pms,
+                "Baseline Mortality": baselines,
+                "Population 25-60": pops_25_60,
+                "Population 60-80": pops_60_80,
+                "Population 80+": pops_80plus,
+                "Overall": deltas,
+            }
+            if factor_name != "SSP":
+                df_dict["SSP"] = ssp
+            df = pd.DataFrame(df_dict)
+
             ssp_df = ssp_df.append(df)
             wk_df = df[
                 [
@@ -309,15 +314,15 @@ def visualize():
                 color=[
                     "gold",
                     "cornflowerblue",
-                    "lightgreen",
-                    "green",
-                    "darkolivegreen",
+                    "lightpink",
+                    "salmon",
+                    "firebrick",
                 ],
             )
 
             # Plot dots representing overall change in mortality
             sns.scatterplot(
-                x=factor_name, y="Overall", data=df, ax=ax, color="orangered"
+                x=factor_name, y="Overall", data=df, ax=ax, color="green"
             )
 
             # Plot dotted line at 0%
@@ -331,15 +336,17 @@ def visualize():
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             if k == 0:
-                if region_source == "GBD":
-                    ax.set_yticklabels(["-100%", "0%", "100%", "200%", "300%", "400%"])
-                elif region_source == "SDI":
-                    ax.set_yticklabels(["-50%", "0%", "50%", "100%", "150%", "200%", "250%"])
+                if factor_name == "SSP":
+                    ax.set_yticklabels(["-75%", "-50%", "-25%", "0%", "25%", "50%", "75%", "100%", "125%", "150%"])
+                else:
+                    ax.set_yticklabels(["-100%", "-50%", "0%", "50%", "100%", "150%", "200%"])
                 ax.set_ylabel("Pct Change")
             if j == rows - 1:
                 ax.set_xlabel(factor_name)
                 if factor_name == "SSP":
                     ax.set_xticklabels(["1", "2", "3", "5"], rotation=0)
+                else:
+                    ax.set_xticklabels(factors)
 
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()

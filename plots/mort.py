@@ -24,10 +24,11 @@ diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+"]
 latitude = np.arange(-89.75, 90.25, 0.5)
 longitude = np.arange(0.25, 360.25, 0.5)
+region_source = "GBD"
 
 # Custom region settings
 country_dict = get_country_names()
-regions, region_countries, region_countries_names = get_regions()
+regions, region_countries, region_countries_names = get_regions(region_source)
 
 
 def bar(factor_name, factors, pop, baseline, countries=None, region=None):
@@ -52,7 +53,7 @@ def bar(factor_name, factors, pop, baseline, countries=None, region=None):
                     year=year,
                     ssp=ssp,
                     ages=ages,
-                    disease=disease,
+                    diseases=diseases,
                     countries=countries,
                     return_values=True,
                 )
@@ -95,7 +96,8 @@ def bar(factor_name, factors, pop, baseline, countries=None, region=None):
         y_coords = all_means
         ax.scatter(x=x_coords, y=y_coords)
 
-    output_dir = "/home/ybenp/CMIP6_Images/Mortality/bar"
+    output_dir = "/home/ybenp/CMIP6_Images/Mortality/bar_GBD"
+    os.makedirs(output_dir, exist_ok=True)
     output_file = f"{output_dir}/{region}_{factor_name}_{pop}_{baseline}.png"
     plt.savefig(output_file)
     plt.close(fig)
@@ -119,7 +121,7 @@ def pie(factor_name, factors, countries=None, region=None):
         for j, ssp in enumerate(ssps):
 
             for k, factor in enumerate(factors):
-                ages, disease = init_by_factor(factor_name, factor)
+                ages, diseases = init_by_factor(factor_name, factor)
 
                 factor_mean, std = multi_year_mort(
                     pop="var",
@@ -127,7 +129,7 @@ def pie(factor_name, factors, countries=None, region=None):
                     year=year,
                     ssp=ssp,
                     ages=ages,
-                    disease=disease,
+                    diseases=diseases,
                     countries=countries,
                     return_values=True,
                 )
@@ -148,7 +150,8 @@ def pie(factor_name, factors, countries=None, region=None):
             ax.text(0, 0, f"{total_deaths}", ha="center", va="center", fontsize=5)
             ax.text(0, -0.2, f"deaths", ha="center", va="center", fontsize=5)
 
-    output_dir = "/home/ybenp/CMIP6_Images/Mortality/pie"
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/pie_GBD/{region_source}"
+    os.makedirs(output_dir, exist_ok=True)
     output_file = f"{output_dir}/{region}_{factor_name}.png"
     plt.legend(labels=factors, bbox_to_anchor=(1.5, 0.5), fontsize=4)
     plt.tight_layout()
@@ -297,8 +300,8 @@ def main():
         regions, region_countries, region_countries_names
     ):
         pie(
-            factor_name="Age",
-            factors=age_groups,
+            factor_name="Disease",
+            factors=diseases,
             countries=countries,
             region=region,
         )
