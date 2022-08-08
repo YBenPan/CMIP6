@@ -21,39 +21,48 @@ def get_country_names():
     return country_dict
 
 
-def get_regions():
+def get_regions(region_source):
     """Return a list of regions with their country IDs and names"""
     country_dict = get_country_names()
-    region_countries_dict = {
-        # Custom region settings
-        # High-income
+    GBD_region_countries_dict = {
         "Southern Latin America": Southern_Latin_America,
         "Australasia": Australasia,
         "High-income Asia Pacific": High_income_Asia_Pacific,
-        "High-income North America": High_income_North_America,        
+        "High-income North America": High_income_North_America,
         "W. Europe": Western_Europe,
-
         "Central Europe": Central_Europe,
         "E. Europe": Eastern_Europe,
         "Central Asia": Central_Asia,
-
         "Caribbean": Caribbean,
         "Central Latin America": Central_Latin_America,
         "Tropical Latin America": Tropical_Latin_America,
         "Andean Latin America": Andean_Latin_America,
-
         "South Asia": South_Asia,
         "East Asia": East_Asia,
         "S.E. Asia": Southeast_Asia,
-
         "N. Africa and Middle East": North_Africa_and_Middle_East,
         "Central Africa": Central_Sub_Saharan_Africa,
         "E. Africa": Eastern_Sub_Saharan_Africa,
         "S. Africa": Southern_Sub_Saharan_Africa,
         "W. Africa": Western_Sub_Saharan_Africa,
-
         "World": ["World"],
     }
+    SDI_region_countries_dict = {
+        "High SDI": High_SDI,
+        "High-middle SDI": High_middle_SDI,
+        "Middle SDI": Middle_SDI,
+        "Low-middle SDI": Low_middle_SDI,
+        "Low SDI": Low_SDI,
+        "World": ["World"],
+    }
+
+    if region_source == "GBD":
+        region_countries_dict = GBD_region_countries_dict
+    elif region_source == "SDI":
+        region_countries_dict = SDI_region_countries_dict
+    else:
+        raise Exception(f"Invalid region source {region_source}")
+
     region_countries_names = list(region_countries_dict.values())
     regions = list(region_countries_dict.keys())
     region_countries = [
