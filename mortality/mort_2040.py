@@ -346,8 +346,9 @@ def compare(j, k, age_group, disease_name, natl_2015, aa_natl_2040, natl_2040):
         # input()
 
 
-def national_output(compare_proj=False):
+def national_output(year, compare_proj=False):
     """Outputs gridded mortality baseline for all countries in 2040"""
+    year = str(year)
 
     for disease, disease_name in zip(diseases, disease_names):
 
@@ -372,7 +373,7 @@ def national_output(compare_proj=False):
             # Import all-age national baseline projection from 2040
             aa_national_projection_path = "D:/CMIP6_data/Mortality/Mortality Projections_2040/"
             aa_national_projection_file = f"{disease}_rate.csv" if disease != "T2D" else "diabetes_rate.csv"
-            aa_natl_2040 = pd.read_csv(aa_national_projection_path + aa_national_projection_file, usecols=[2, 18, 19, 20, 21, 22, 23])
+            aa_natl_proj = pd.read_csv(aa_national_projection_path + aa_national_projection_file, usecols=[2, 18, 19, 20, 21, 22, 23])
 
         # Loop through countries
         for j in np.arange(0, 193):
@@ -381,16 +382,16 @@ def national_output(compare_proj=False):
 
                 # Import national baseline projection from 2040
                 national_projection_file = os.path.join(
-                    national_projection_path, "2040", disease, f"{age_group}.csv"
+                    national_projection_path, year, disease, f"{age_group}.csv"
                 )
-                natl_2040 = pd.read_csv(national_projection_file, usecols=[1, 2, 7, 8, 9])
-                natl_2040 = natl_2040.fillna(0)
+                natl_proj = pd.read_csv(national_projection_file, usecols=[1, 2, 7, 8, 9])
+                natl_proj = natl_proj.fillna(0)
 
                 for p, data_type_2040 in enumerate(data_types_2040):
 
                     # Retrieve mortality corresponding to the correct age group and state
                     try:
-                        tmp = natl_2040.iloc[j]
+                        tmp = natl_proj.iloc[j]
                         mort = tmp[data_type_2040]
                     except IndexError:
                         print(age_group, j)
@@ -399,12 +400,13 @@ def national_output(compare_proj=False):
                     data[k, p, :, :] += fractionCountry[j, :, :] * mort
 
                 if compare_proj:
-                    compare(j, k, age_group, disease_name, natl_2015, aa_natl_2040, natl_2040)
+                    compare(j, k, age_group, disease_name, natl_2015, aa_natl_proj, natl_proj)
 
-        output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by 5-year age groups with national-level data only in 2040"
+        output_description = f"Gridded (0.5x0.5) mortality rate of {disease_name} by 5-year age groups with national-level data only in {year}"
         output_path = (
-            "D:/CMIP6_data/Mortality/Output/Age_specific_National_mortality_baseline_2040/"
+            f"D:/CMIP6_data/Mortality/Output/Age_specific_National_mortality_baseline_{year}/"
         )
+        os.makedirs(output_path, exist_ok=True)
         output_file = f"{disease_name}.nc"
         ds = gen_output(disease_name, data, output_description)
         ds.to_netcdf(output_path + output_file)
@@ -416,7 +418,7 @@ def national_output(compare_proj=False):
 def main():
     # subnational_output()
     # combined_output()
-    national_output()
+    national_output(year=2015)
 
 
 if __name__ == "__main__":

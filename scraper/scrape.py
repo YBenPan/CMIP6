@@ -18,6 +18,8 @@ disease_ids = [1, 126, 152, 111, 12, 85, 69, 112, 167]
 download_path = "D:\CMIP6_data\Mortality\Age-specific Mortality Projections_2040_dl"
 mort_path = "D:\CMIP6_data\Mortality\Age-specific Mortality Projections_2040"
 
+# Run Settings
+year = 2040
 ages = [
     "25-29 years",
     "30-34 years",
@@ -36,6 +38,7 @@ ages = [
     "95+ years",
 ]
 
+# 2040
 age_urls = [
     "http://ihmeuw.org/5tc4",  # 25-29
     "http://ihmeuw.org/5tc5",  # 30-34
@@ -54,6 +57,25 @@ age_urls = [
     "http://ihmeuw.org/5tci",  # 95+
 ]
 
+# # 2015
+# age_urls = [
+#     "http://ihmeuw.org/5tnk",  # 25-29
+#     "http://ihmeuw.org/5tnl",  # 30-34
+#     "http://ihmeuw.org/5tnm",  # 35-39
+#     "http://ihmeuw.org/5tnn",  # 40-44
+#     "http://ihmeuw.org/5tno",  # 45-49
+#     "http://ihmeuw.org/5tnp",  # 50-54
+#     "http://ihmeuw.org/5tnq",  # 55-59
+#     "http://ihmeuw.org/5tnr",  # 60-64
+#     "http://ihmeuw.org/5tns",  # 65-69
+#     "http://ihmeuw.org/5tnt",  # 70-74
+#     "http://ihmeuw.org/5tnu",  # 75-79
+#     "http://ihmeuw.org/5tnv",  # 80-84
+#     "http://ihmeuw.org/5tnw",  # 85-89
+#     "http://ihmeuw.org/5tnx",  # 90-94
+#     "http://ihmeuw.org/5tny",  # 95+
+# ]
+
 
 def download():
     opts = Options()
@@ -66,7 +88,6 @@ def download():
     # Create browser object
     browser = Chrome(options=opts)
 
-    year = 2040
     for age, age_url in zip(ages, age_urls):
 
         print(age, age_url)
@@ -115,7 +136,7 @@ def download():
 
             # TODO: Scroll to age
 
-            time.sleep(2)
+            time.sleep(5)
 
             # Click on download button
             dl_elem = browser.find_element(
@@ -129,7 +150,7 @@ def download():
             )
             csv_dl_elem.click()
 
-            time.sleep(2)
+            time.sleep(5)
             # os.sync()
 
             download_file = os.path.join(download_path, "download.csv")
@@ -231,7 +252,6 @@ def rename_helper(df):
 
 def post_process():
     """Clean the downloaded data for it to be used by mortality scripts"""
-    year = 2040
     for age in ages:
 
         for disease in diseases:
