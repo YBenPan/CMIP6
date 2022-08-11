@@ -1,4 +1,5 @@
 import os
+import sys
 from glob import glob
 import matplotlib
 import numpy as np
@@ -20,15 +21,10 @@ parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
 years = [2015, 2020, 2030, 2040]
-diseases = ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+diseases = ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+"]
 latitude = np.arange(-89.75, 90.25, 0.5)
 longitude = np.arange(0.25, 360.25, 0.5)
-region_source = "GBD"
-
-# Custom region settings
-country_dict = get_country_names()
-regions, region_countries, region_countries_names = get_regions(region_source)
 
 
 def bar(factor_name, factors, pop, baseline, countries=None, region=None):
@@ -103,12 +99,14 @@ def bar(factor_name, factors, pop, baseline, countries=None, region=None):
     plt.close(fig)
 
 
-def pie(factor_name, factors, countries=None, region=None):
+def pie(factor_name, factors, region_source, countries=None, region=None):
     """Pie/Donut chart of regional mortality by factors (disease/age) in 2015 and 2040 """
+    # Initial Setting
     if countries == None:
         countries = [-1]
     if region == None:
         region = "World"
+
     mort_data = np.zeros((2, len(ssps),  len(factors))) # 2015, 2040
     years = [2015, 2040]
 
@@ -123,6 +121,7 @@ def pie(factor_name, factors, countries=None, region=None):
             for k, factor in enumerate(factors):
                 ages, diseases = init_by_factor(factor_name, factor)
 
+                # Calculate mortality based on year, ssp, and age/disease
                 factor_mean, std = multi_year_mort(
                     pop="var",
                     baseline=year,
@@ -150,7 +149,7 @@ def pie(factor_name, factors, countries=None, region=None):
             ax.text(0, 0, f"{total_deaths}", ha="center", va="center", fontsize=5)
             ax.text(0, -0.2, f"deaths", ha="center", va="center", fontsize=5)
 
-    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/pie_GBD/{region_source}"
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/pie/{region_source}"
     os.makedirs(output_dir, exist_ok=True)
     output_file = f"{output_dir}/{region}_{factor_name}.png"
     plt.legend(labels=factors, bbox_to_anchor=(1.5, 0.5), fontsize=4)
@@ -208,7 +207,7 @@ def map_year(year, countries=None):
     plt.close(fig)
 
 
-def map_delta():
+def map_delta(regions, region_countries, region_countries_names):
     """Driver program for delta mortality map plots"""
     # Get country mask
     fractionCountries = get_countries_mask(countries=None)
@@ -296,15 +295,24 @@ def map_delta():
 
 
 def main():
+    # Get argument from CLI
+    assert len(sys.argv) == 3 
+    factor_name, region_source = sys.argv[1:]
+    if factor_name == "Disease":
+        factors = diseases
+    elif factor_name == "Age":
+        factors = age_groups
+    else:
+        raise NameError(f"{factor_name} not found!")
+
+    # Custom region settings
+    country_dict = get_country_names()
+    regions, region_countries, region_countries_names = get_regions(region_source)
+
     for (region, countries, countries_names) in zip(
         regions, region_countries, region_countries_names
     ):
-        pie(
-            factor_name="Disease",
-            factors=diseases,
-            countries=countries,
-            region=region,
-        )
+        pie(factor_name, factors, region_source, countries, region)
     
     # # Get 2015 global mortality numbers
     # all_means = []

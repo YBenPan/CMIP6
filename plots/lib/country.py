@@ -15,7 +15,7 @@ def get_country_names():
     )
     countries_df = pd.read_csv(countries_file, usecols=["COUNTRY"])
     country_names = [*countries_df["COUNTRY"].values, "World"]
-    warnings.warn("Manually check if world is correct!")
+    # warnings.warn("Manually check if world is correct!")
     country_ids = [*countries_df.index.values, -1]
     country_dict = dict(zip(country_names, country_ids))
     return country_dict

@@ -1,9 +1,12 @@
 import os
+import sys
 from glob import glob
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import itertools
+from multiprocessing import Pool
 from lib.country import get_country_names, get_regions
 from lib.regions import *
 from lib.helper import pop_ssp_dict, init_by_factor
@@ -15,40 +18,19 @@ from lib.helper import pop_ssp_dict, init_by_factor
 
 # Run Settings
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
-diseases = ["Allcause", "COPD", "IHD", "LC", "LRI", "Stroke", "T2D"]
+diseases = ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
 age_groups = ["25-60", "60-80", "80+", "25+"]
-change_type = "absolute"  # "absolute" or "pct"
-region_source = "SDI"
-factor_name = "Disease"
-
-# Choose factor
-if factor_name == "Disease":
-    factors = diseases
-elif factor_name == "Age":
-    raise Exception("Plotting by age still in development")
-    # factors = age_groups
-elif factor_name == "SSP":
-    factors = ssps
-else:
-    raise NameError(f"{factor_name} not found!")
 
 # General Settings
 parent_dir = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/Health"
 home_dir = "/home/ybenp"
-output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition_new/{region_source}"
-os.makedirs(output_dir, exist_ok=True)
-
-
-# Get countries and regions
-country_dict = get_country_names()
-regions, region_countries, region_countries_names = get_regions(region_source)
 
 
 def get_models(ssp):
     """Get all models from given ssp"""
     files_2015 = sorted(
         glob(
-            f"{parent_dir}/Baseline_Ben_2015_National/5_years/{ssp}/*/CountryMortalityAbsolute/Allcause_mean/*_2015_GEMM.csv"
+            f"{parent_dir}/Baseline_Ben_2015_National_GBD/5_years/{ssp}/*/CountryMortalityAbsolute/Allcause_mean/*_2015_GEMM.csv"
         )
     )
     models = sorted(set([file.split("/")[-1].split("_")[2] for file in files_2015]))
@@ -86,7 +68,7 @@ def mort(
         countries = [-1]
     ages = ["all_age_Mean"] if ages is None else ages
     diseases = (
-        ["COPD", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
+        ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
     )
     baseline = str(baseline)
     year = str(year)
@@ -97,13 +79,13 @@ def mort(
     for model in models:
 
         # Search Allcause first to get the number of files/realizations in the model
-        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National{'_GBD' if baseline == '2040' else ''}/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/Allcause_mean/all_ages_{model}_*_{year}_GEMM.csv"
+        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National_GBD/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/Allcause_mean/all_ages_{model}_*_{year}_GEMM.csv"
         files = sorted(glob(search_str))
         model_values = np.zeros(len(files))
 
         for disease in diseases:
 
-            search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National{'_GBD' if baseline == '2040' else ''}/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
+            search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National_GBD/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
             files = sorted(glob(search_str))
 
             for j, file in enumerate(files):
@@ -231,8 +213,28 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
     return pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas
 
 
-def visualize():
+def visualize(factor_name, region_source, change_type):
     """Driver program for visualization/output"""
+    print(f"Job started: {factor_name}, {region_source}, {change_type}")
+
+    # Output directory setting
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/{region_source}"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Choose factor
+    if factor_name == "Disease":
+        factors = diseases
+    elif factor_name == "Age":
+        raise Exception("Plotting by age still in development")
+        # factors = age_groups
+    elif factor_name == "SSP":
+        factors = ssps
+    else:
+        raise NameError(f"{factor_name} not found!")
+
+    # Get countries and regions
+    country_dict = get_country_names()
+    regions, region_countries, region_countries_names = get_regions(region_source)
 
     sns.set_style("ticks")
 
@@ -322,7 +324,7 @@ def visualize():
 
             # Plot dots representing overall change in mortality
             sns.scatterplot(
-                x=factor_name, y="Overall", data=df, ax=ax, color="green"
+                x=factor_name, y="Overall", data=df, ax=ax, color="dimgray"
             )
 
             # Plot dotted line at 0%
@@ -376,9 +378,24 @@ def visualize():
     overall_df = overall_df.reset_index(drop=True)
     overall_df.to_csv(output_file, index=False)
 
+    return f"Done: {factor_name}, {region_source}, {change_type}"
+
 
 def main():
-    visualize()
+    # # Multiprocessing (Doesn't work because of system lock)
+    # factor_names = ["Disease", "SSP"]
+    # region_sources = ["GBD", "SDI"]
+    # change_types = ["absolute", "pct"]
+    # args = list(itertools.product(factor_names, region_sources, change_types))
+    # with Pool() as pool:
+    #     for result in pool.starmap(visualize, args):
+    #         print(result, flush=True)
+    
+    # Get arguments from CLI
+    assert len(sys.argv) == 4
+    factor_name, region_source, change_type = sys.argv[1:]
+
+    visualize(factor_name, region_source, change_type)
 
 
 if __name__ == "__main__":
