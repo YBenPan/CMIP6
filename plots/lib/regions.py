@@ -1,4 +1,5 @@
 import pandas as pd
+import itertools
 import os
 
 home_dir = "/home/ybenp"
@@ -220,7 +221,6 @@ High_SDI = [
     "Denmark",
     "San Marino",
     "Netherlands",
-    "United Arab Emirates",
     "Canada",
     "South Korea",
     "Japan",
@@ -232,7 +232,6 @@ High_SDI = [
     "Belgium",
     "Austria",
     "United Kingdom",
-    "Kuwait",
     "Cyprus",
     "Slovenia",
     "Australia",
@@ -242,23 +241,24 @@ High_SDI = [
     "Estonia",
     "Czech Republic",
     "Brunei",
-    "Qatar",
     "Latvia",
     # "Bermuda",
-]
-
-High_middle_SDI = [
     "Slovakia",
     "Puerto Rico",
-    # "Guam",
-    "Israel",
-    "Russia",
     "Italy",
     "Poland",
     "Greece",
-    "The Bahamas",
     "Malta",
     "Croatia",
+    "Sweden",
+    "Finland",
+]
+
+High_middle_SDI = [
+    # "Guam",
+    "Israel",
+    "Russia",
+    "The Bahamas",
     "Hungary",
     "Saudi Arabia",
     # "Montenegro",
@@ -272,7 +272,6 @@ High_middle_SDI = [
     "Romania",
     "Cook Islands",
     "Chile",
-    "Bahrain",
     "Barbados",
     "Macedonia",
     "Belarus",
@@ -283,79 +282,83 @@ High_middle_SDI = [
     "Palau",
     "Turkey",
     "Malaysia",
-    "Dominica",
-    "Jordan",
     "Kazakhstan",
     "Libya",
-    "Bosnia and Herzegovina",
-    "Seychelles",
     # "American Samoa",
     "Niue",
-]
-
-Middle_SDI = [
+    "United Arab Emirates",
+    "Kuwait",
+    "Qatar",
     "Argentina",
     "Mauritius",
     "Lebanon",
     "Georgia",
+    "Armenia",
+    "Azerbaijan",
+    "Panama",
+    "Iran",
+    "Turkmenistan",
+    "Cuba",
+]
+
+Middle_SDI = [
+    "Bahrain",
+    "Dominica",
+    "Jordan",
+    "Bosnia and Herzegovina",
+    "Seychelles",
     "Uruguay",
     "Moldova",
-    "Armenia",
     "Jamaica",
-    "Azerbaijan",
     "Sri Lanka",
     "Thailand",
     "Albania",
     "South Africa",
     "Costa Rica",
-    "Panama",
     "China",
     "Saint Lucia",
     "Equatorial Guinea",
     "Tunisia",
     "Grenada",
-    "Iran",
-    "Turkmenistan",
-    "Cuba",
     "Fiji",
     "Indonesia",
-    "Iraq",
     "Mexico",
     "Peru",
     "Algeria",
     "Egypt",
-    "Samoa",
-    "Gabon",
     "Brazil",
     "Ecuador",
     "Suriname",
-    "Tonga",
     "Paraguay",
     "Botswana",
     "Uzbekistan",
     "Colombia",
-    "Syria",
     "Venezuela",
+    "Guyana",
+    "Philippines",
+    "Vietnam",
+    "Mongolia",
+    "Dominican Republic",
+    "El Salvador",
+    "Maldives",
 ]
 
 Low_middle_SDI = [
-    "Guyana",
-    "Philippines",
+    "Iraq",
+    "Samoa",
+    "Gabon",
+    "Tonga",
+    "Syria",
     "Namibia",
-    "Vietnam",
-    "Mongolia",
     "Belize",
     "Nauru",
     "Kyrgyzstan",
-    "Dominican Republic",
     "Tuvalu",
     "Federated States of Micronesia",
     "Swaziland",
     # "Palestine",
-    "El Salvador",
     "Bolivia",
     "North Korea",
-    "Maldives",
     "Congo",
     "India",
     "Marshall Islands",
@@ -377,21 +380,21 @@ Low_middle_SDI = [
     "Mauritania",
     "Laos",
     "Cameroon",
-]
-
-Low_SDI = [
     "Zimbabwe",
     "Bangladesh",
     "Cambodia",
+    "Bhutan",
+    "Pakistan",
+    "Nepal",
+]
+
+Low_SDI = [
     "Angola",
     "Comoros",
-    "Bhutan",
     "Djibouti",
-    "Pakistan",
     "Haiti",
     "Yemen",
     "Rwanda",
-    "Nepal",
     "Tanzania",
     "Solomon Islands",
     "Togo",
@@ -456,10 +459,25 @@ SDI_regions = [High_SDI, High_middle_SDI, Middle_SDI, Low_middle_SDI, Low_SDI]
 
 regions = SDI_regions
 
-if all(all(country in country_names for country in countries) for countries in regions):
-    print("Check complete: all countries are in the official country list")
-else:
-    for countries in regions:
-        for country in countries:
-            if country not in country_names:
-                print(f"Country {country} not in list!")
+all_countries = list(itertools.chain.from_iterable(regions))
+
+# Bijective verification
+
+# None missing
+# if all(country in country_names for country in all_countries):
+#     print("Check complete: all region countries are in the official country list")
+# else:
+#     for country in all_countries:
+#         if country not in country_names:
+#             print(f"Country {country} not in official list!")
+
+# Missing countries: Kiribati, Saint Vincent and the Grenadines, Sao Tome and Principe
+# if all(country in all_countries for country in country_names):
+#     print("Check complete: all countries in the official country list are in one of the regions")
+# else:
+#     for country in country_names:
+#         if country not in all_countries:
+#             print(f"Country {country} not in region lists")
+
+
+    
