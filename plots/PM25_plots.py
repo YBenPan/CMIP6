@@ -24,7 +24,7 @@ longitude = np.arange(0.25, 360.25, 0.5)
 
 # Get countries and regions
 country_dict = get_country_names()
-regions, region_countries, region_countries_names = get_regions()
+regions, region_countries, region_countries_names = get_regions("GBD")
 
 
 def line(region, countries, countries_names):
@@ -385,7 +385,10 @@ def map_delta(type="Concentration"):
 def main():
     # line()
     # map()
-    output_means(regions, region_countries, region_countries_names)
+    output_means(2015, "SDI")
+    output_means(2015, "GBD")
+    output_means(2040, "SDI")
+    output_means(2040, "GBD")
     # map_year(year=2040, type="Concentration")
     # map_delta(type="Concentration")
 

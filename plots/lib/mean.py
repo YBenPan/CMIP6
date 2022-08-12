@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import csv
 from lib.map import get_countries_mask, get_grid_area, get_pop
+from lib.country import get_regions
 from lib.helper import pop_ssp_dict
 
 
@@ -132,9 +133,9 @@ def get_means(regions, region_countries, region_countries_names, ssp, year, type
 
         # Get population for population weighted mean for verification
         pop, tot_pop = get_pop(ssp, year, fractionCountries)
-        print(
-            f"{region} population: {int(np.round(tot_pop, -6))} area: {int(tot_area)}"
-        )
+        # print(
+        #     f"{region} population: {int(np.round(tot_pop, -6))} area: {int(tot_area)}"
+        # )
 
         conc, awm, pwm, conc_std, awm_std, pwm_std = mean(
             ssp, year, fractionCountries, type
@@ -148,24 +149,35 @@ def get_means(regions, region_countries, region_countries_names, ssp, year, type
     return awms, pwms, awms_std, pwms_std
 
 
-def output_means(regions, region_countries, region_countries_names):
+def output_means(year, region_source):
     """Output the means and standard deivations of input regions in ssp245"""
-    awms, pwms, awms_std, pwms_std = get_means(
-        regions,
-        region_countries,
-        region_countries_names,
-        ssp="ssp245",
-        year=2015,
-        type="PM2.5 Concentration",
-    )
+    regions, region_countries, region_countries_names = get_regions(region_source)
 
     output_dir = "/home/ybenp/CMIP6_Images/PM2.5/map"
-    output_file = os.path.join(output_dir, "2015_mean.csv")
-    with open(output_file, "w") as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(["Region Name", "AWM", "PWM", "AWM STD", "PWM STD"])
-        for i, region in enumerate(regions):
-            csvwriter.writerow([region, awms[i], pwms[i], awms_std[i], pwms_std[i]])
-            print(
-                f"Region {region}: has AWM {awms[i]} with {awms_std[i]} uncertainty and PWM {pwms[i]} with {pwms_std[i]} uncertainty"
-            )
+    output_file = os.path.join(output_dir, f"{year}_{region_source}_mean.csv")
+    data = pd.DataFrame()
+
+    for ssp in ssps:
+        awms, pwms, awms_std, pwms_std = get_means(regions, region_countries, region_countries_names, ssp, year, "PM2.5 Concentration")
+
+        df = pd.DataFrame(
+            {
+                "SSP": ssp,
+                "Region Name": regions,
+                "AWM": awms,
+                "PWM": pwms,
+                "AWM STD": awms_std,
+                "PWM STD": pwms_std,
+            }
+        )
+        data = data.append(df)
+
+        # with open(output_file, "w") as csvfile:
+        #     csvwriter = csv.writer(csvfile)
+        #     csvwriter.writerow(["Region Name", "AWM", "PWM", "AWM STD", "PWM STD"])
+        #     for i, region in enumerate(regions):
+        #         csvwriter.writerow([region, awms[i], pwms[i], awms_std[i], pwms_std[i]])
+        #         print(
+        #             f"Region {region}: has AWM {awms[i]} with {awms_std[i]} uncertainty and PWM {pwms[i]} with {pwms_std[i]} uncertainty"
+        #         )
+    data.to_csv(output_file)
