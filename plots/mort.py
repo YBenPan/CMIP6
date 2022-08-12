@@ -100,14 +100,14 @@ def bar(factor_name, factors, pop, baseline, countries=None, region=None):
 
 
 def pie(factor_name, factors, region_source, countries=None, region=None):
-    """Pie/Donut chart of regional mortality by factors (disease/age) in 2015 and 2040 """
+    """Pie/Donut chart of regional mortality by factors (disease/age) in 2015 and 2040"""
     # Initial Setting
     if countries == None:
         countries = [-1]
     if region == None:
         region = "World"
 
-    mort_data = np.zeros((2, len(ssps),  len(factors))) # 2015, 2040
+    mort_data = np.zeros((2, len(ssps), len(factors)))  # 2015, 2040
     years = [2015, 2040]
 
     fig, axes = plt.subplots(2, 4)
@@ -136,7 +136,7 @@ def pie(factor_name, factors, region_source, countries=None, region=None):
             ax = axes[i, j]
             data = mort_data[i, j]
             labels = [
-                f"{np.round(mort / np.sum(mort_data[i, j]) * 100, 1)}%" 
+                f"{np.round(mort / np.sum(mort_data[i, j]) * 100, 1)}%"
                 for mort in mort_data[i, j]
             ]
             ax.pie(data, labels=labels, textprops={"size": 4}, startangle=90)
@@ -296,7 +296,7 @@ def map_delta(regions, region_countries, region_countries_names):
 
 def main():
     # Get argument from CLI
-    assert len(sys.argv) == 3 
+    assert len(sys.argv) == 3
     factor_name, region_source = sys.argv[1:]
     if factor_name == "Disease":
         factors = diseases
@@ -313,7 +313,7 @@ def main():
         regions, region_countries, region_countries_names
     ):
         pie(factor_name, factors, region_source, countries, region)
-    
+
     # # Get 2015 global mortality numbers
     # all_means = []
     # for ssp in ssps:
@@ -345,6 +345,7 @@ def main():
     # map_year(year=2030)
     # map_year(year=2040)
     # map_delta()
+
 
 if __name__ == "__main__":
     main()

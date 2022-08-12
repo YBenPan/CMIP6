@@ -68,7 +68,9 @@ def mort(
         countries = [-1]
     ages = ["all_age_Mean"] if ages is None else ages
     diseases = (
-        ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"] if diseases is None else diseases
+        ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
+        if diseases is None
+        else diseases
     )
     baseline = str(baseline)
     year = str(year)
@@ -131,6 +133,8 @@ def multi_year_mort(
 
 def decompose(factor_name, factors, ssp, region, countries, output_type):
     """Compute contributions of each factor using different combinations of pop and baseline scenarios"""
+    morts_2015 = []
+    morts_2040 = []
     pms = []
     baselines = []
     pops_25_60 = []
@@ -166,6 +170,8 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
         delta = mort("var", "2040", 2040, ssp, ages, diseases, countries) - mort(
             "2010", "2015", 2015, ssp, ages, diseases, countries
         )
+        mort_2015 = mort("2010", "2015", 2015, ssp, ages, diseases, countries)
+        mort_2040 = mort("var", "2040", 2040, ssp, ages, diseases, countries)
 
         # Method: (Pop 2010, Base 2015, Year 2015) -> PM2.5 Contribution
         #         (Pop 2010, Base 2015, Year 2040) -> Baseline Mortality Contribution
@@ -196,6 +202,8 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
             pop_80plus = np.round(pop_80plus / ref * 100, 1)
             delta = np.round(delta / ref * 100, 1)
 
+        morts_2015.append(mort_2015)
+        morts_2040.append(mort_2040)
         pms.append(pm)
         baselines.append(baseline)
         pops_25_60.append(pop_25_60)
@@ -210,7 +218,16 @@ def decompose(factor_name, factors, ssp, region, countries, output_type):
         print(f"Overall Change: {delta}")
         print()
 
-    return pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas
+    return (
+        morts_2015,
+        morts_2040,
+        pms,
+        baselines,
+        pops_25_60,
+        pops_60_80,
+        pops_80plus,
+        deltas,
+    )
 
 
 def visualize(factor_name, region_source, change_type):
@@ -252,16 +269,12 @@ def visualize(factor_name, region_source, change_type):
             rows = 3
             cols = 2
             fig, axes = plt.subplots(rows, cols, figsize=(12, 15))
-        if factor_name == "SSP":
-            ymin = -75
-            ymax = 150
-        else:
-            ymin = -100
-            ymax = 200
+        ymin = -100
+        ymax = 200
 
         # Initialize plotting
         fig.suptitle(
-            f"Decomposition of changes in PM2.5-attributable mortality from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''} by factor"
+            f"Decomposition of changes in PM2.5-attributable mortality from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''} by {factor_name}"
         )
 
         ssp_df = pd.DataFrame()
@@ -277,9 +290,16 @@ def visualize(factor_name, region_source, change_type):
             ax = axes[j, k]
 
             # Compute contributions
-            pms, baselines, pops_25_60, pops_60_80, pops_80plus, deltas = decompose(
-                factor_name, factors, ssp, region, countries, change_type
-            )
+            (
+                morts_2015,
+                morts_2040,
+                pms,
+                baselines,
+                pops_25_60,
+                pops_60_80,
+                pops_80plus,
+                deltas,
+            ) = decompose(factor_name, factors, ssp, region, countries, change_type)
             # Visualize with a stacked bar plot
 
             df_dict = {
@@ -294,6 +314,9 @@ def visualize(factor_name, region_source, change_type):
             }
             if factor_name != "SSP":
                 df_dict["SSP"] = ssp
+            if change_type == "absolute":
+                df_dict["2015 Mortality"] = morts_2015
+                df_dict["2040 Mortality"] = morts_2040
             df = pd.DataFrame(df_dict)
 
             ssp_df = ssp_df.append(df)
@@ -323,9 +346,7 @@ def visualize(factor_name, region_source, change_type):
             )
 
             # Plot dots representing overall change in mortality
-            sns.scatterplot(
-                x=factor_name, y="Overall", data=df, ax=ax, color="dimgray"
-            )
+            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax, color="dimgray")
 
             # Plot dotted line at 0%
             ax.axhline(0, ls="--", color="black")
@@ -338,10 +359,9 @@ def visualize(factor_name, region_source, change_type):
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             if k == 0:
-                if factor_name == "SSP":
-                    ax.set_yticklabels(["-75%", "-50%", "-25%", "0%", "25%", "50%", "75%", "100%", "125%", "150%"])
-                else:
-                    ax.set_yticklabels(["-100%", "-50%", "0%", "50%", "100%", "150%", "200%"])
+                ax.set_yticklabels(
+                    ["-100%", "-50%", "0%", "50%", "100%", "150%", "200%", "250%"]
+                )
                 ax.set_ylabel("Pct Change")
             if j == rows - 1:
                 ax.set_xlabel(factor_name)
@@ -353,8 +373,8 @@ def visualize(factor_name, region_source, change_type):
         # Plot legend
         handles, labels = axes[0, 0].get_legend_handles_labels()
         labels = [
-            "PM2.5 Concentration",
             "Baseline Mortality",
+            "PM2.5 Concentration",
             "Population 25-60",
             "Population 60-80",
             "Population 80+",
@@ -390,7 +410,7 @@ def main():
     # with Pool() as pool:
     #     for result in pool.starmap(visualize, args):
     #         print(result, flush=True)
-    
+
     # Get arguments from CLI
     assert len(sys.argv) == 4
     factor_name, region_source, change_type = sys.argv[1:]

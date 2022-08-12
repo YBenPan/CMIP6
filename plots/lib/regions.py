@@ -478,6 +478,3 @@ all_countries = list(itertools.chain.from_iterable(regions))
 #     for country in country_names:
 #         if country not in all_countries:
 #             print(f"Country {country} not in region lists")
-
-
-    
