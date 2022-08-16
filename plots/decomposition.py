@@ -346,7 +346,9 @@ def visualize(factor_name, region_source, change_type):
             )
 
             # Plot dots representing overall change in mortality
-            sns.scatterplot(x=factor_name, y="Overall", data=df, ax=ax, color="mediumseagreen")
+            sns.scatterplot(
+                x=factor_name, y="Overall", data=df, ax=ax, color="mediumseagreen"
+            )
 
             # Plot dotted line at 0%
             ax.axhline(0, ls="--", color="black")

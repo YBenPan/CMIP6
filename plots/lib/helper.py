@@ -17,7 +17,7 @@ def pct_change(a, b):
     return np.round((float(b) - a) / a * 100, 1)
 
 
-def init_by_factor(factor_name, factor):
+def init_by_factor(factor_name=None, factor=None):
     """Initialize ages and diseases array based on the variable in question"""
     if factor_name == "Age":
         if factor == "25-60":
