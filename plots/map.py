@@ -64,7 +64,7 @@ def findColor(colorbounds, colormap, num):
             continue
         else:
             return colormap(x - 1)
-    return colormap(len(colorbounds) - 2)
+    return colormap(len(colorbounds))
 
 
 def output_diff(data, diff_file, ssp, models):
@@ -82,7 +82,7 @@ def output_diff(data, diff_file, ssp, models):
             )
 
 
-def contribution_process(ssp, factor):
+def contribution_process(ssp, factor, type):
     data = np.zeros(len(country_names))
 
     for country in country_codes:
@@ -108,7 +108,7 @@ def contribution_process(ssp, factor):
             ]
             contrib = mort("var", "2040", 2040, ssp, ages_60plus, None, country) - mort(
                 "2010", "2040", 2040, ssp, ages_60plus, None, country)
-        elif factor == "Population Growth":
+        elif factor == "Population Size":
             ages_25_60 = [
                 "age_25_29_Mean",
                 "age_30_34_Mean",
@@ -124,40 +124,69 @@ def contribution_process(ssp, factor):
             contrib = mort("2010", "2040", 2040, ssp, None, None, country) - mort(
             "2010", "2015", 2040, ssp, None, None, country
         )
+        else:
+            raise Exception(f"{factor} not valid!")
         ref = mort("2010", "2015", 2015, ssp, None, None, country)
-        data[country] = contrib / ref * 100
-        print(f"{ssp}, {country_names[country]}: {data[country]}%")
+        # Raw percent change relative to 2015 mortality
+        if type == "pct":
+            data[country] = contrib / ref * 100
+        # How much of the overall change is due to this factor
+        elif type == "frac":
+            delta = mort("var", "2040", 2040, ssp, None, None, country) - mort(
+                "2010", "2015", 2015, ssp, None, None, country
+            )
+            data[country] = contrib / delta * 100
+            if abs(data[country]) > 200: 
+                data[country] = 0
+        elif type == "absolute":
+            data[country] = contrib
+        print(f"{ssp}, {factor}, {country_names[country]}: {data[country]}%")
 
     print(f"DONE: {ssp}")
 
     return data
 
 
-def contribution(factor):
+def contribution(factor=None, type="pct"):
     """Plot the contribution of PM2.5 by SSPs"""
     # Define settings
-    if factor == "PM25":
-        bounds = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+    if type == "absolute":
+        bounds = [-100000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000, 100000, 500000, 1000000]
         cmap = matplotlib.cm.get_cmap("coolwarm", lut=len(bounds) + 1)
-    elif factor == "Population" or factor == "Aging":
-        bounds = [0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300]
-        cmap = matplotlib.cm.get_cmap("Reds", lut=len(bounds) + 1)
-    elif factor == "Population Growth":
-        bounds = [0, 10, 20, 30, 40, 50, 60, 70, 80]
-        cmap = matplotlib.cm.get_cmap("Reds", lut=len(bounds) + 1)
-    elif factor == "Baseline Mortality":
-        bounds = [-60, -50, -40, -30, -20, -10, 0]
-        cmap = matplotlib.cm.get_cmap("Blues_r", lut=len(bounds) + 1)
+    else:
+        if factor == "PM25":
+            bounds = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+            cmap = matplotlib.cm.get_cmap("coolwarm", lut=len(bounds) + 1)
+        elif factor == "Population" or factor == "Aging":
+            bounds = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+            cmap = matplotlib.cm.get_cmap("Reds", lut=len(bounds) + 1)
+        elif factor == "Population Size":
+            bounds = [0, 10, 20, 30, 40, 50, 60, 70, 80]
+            cmap = matplotlib.cm.get_cmap("Reds", lut=len(bounds) + 1)
+        elif factor == "Baseline Mortality":
+            bounds = [-60, -50, -40, -30, -20, -10, 0]
+            cmap = matplotlib.cm.get_cmap("Blues_r", lut=len(bounds) + 1)
+        elif factor == None:
+            # bounds = [-200, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 200]
+            bounds = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
+            cmap = matplotlib.cm.get_cmap("coolwarm", lut=len(bounds) + 1)
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
     fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
     fig.set_size_inches(16, 8)
 
-    factor_args = [factor] * len(ssps)
     pool = Pool()
-    data = pool.starmap(contribution_process, zip(ssps, factor_args))
+    if factor == None:
+        factors = ["PM25", "Aging", "Population Size", "Baseline Mortality"]
+        ssp_args = ["ssp245"] * len(factors)
+        type_args = [type] * len(factors)
+        data = pool.starmap(contribution_process, zip(ssp_args, factors, type_args))
+    else:
+        factor_args = [factor] * len(ssps)
+        type_args = [type] * len(ssps)
+        data = pool.starmap(contribution_process, zip(ssps, factor_args, type_args))
 
-    for i, ssp in enumerate(ssps):
+    for i in range(4):
         row = i // 2
         col = i % 2
         ax = axes[row, col]
@@ -180,8 +209,10 @@ def contribution(factor):
                 ax.add_geometries(
                     [country.geometry], ccrs.PlateCarree(), facecolor=color
                 )
-
-        ax.set_title(ssp)
+        if factor == None:
+            ax.set_title(factors[i])
+        else:
+            ax.set_title(ssps[i])
 
     cbar = fig.colorbar(
         matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
@@ -192,18 +223,20 @@ def contribution(factor):
         format="%d",
     )
     cbar.ax.set_ylabel(f"Percent Change")
-    fig.suptitle(f"Contribution of {factor}")
+    if factor == None:
+        fig.suptitle(f"Contribution of different factors")
+    else:
+        fig.suptitle(f"Contribution of {factor} under different SSPs")
 
     output_dir = f"/home/ybenp/CMIP6_Images/Mortality/map/"
     os.makedirs(output_dir, exist_ok=True)
-    output_file = f"{output_dir}/{factor}_contrib.png"
+    output_file = f"{output_dir}/{f'{factor}_' if factor != None else ''}contrib_{type}.png"
     plt.savefig(output_file)
     plt.close(fig)
-    # del fig, ax, cbar
 
 
 def main():
-    contribution(factor="Baseline Mortality")
+    contribution()
 
 
 if __name__ == "__main__":
