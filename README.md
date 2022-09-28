@@ -1,4 +1,4 @@
-# CMIP6_src
+# CMIP6
 
 Estimating the Regional Air Quality and Health Impacts of Pollution Policies in CMIP6 Scenarios
 
