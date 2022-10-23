@@ -133,6 +133,16 @@ def pie(factor_name, factors, region_source, countries=None, region=None):
                     return_values=True,
                 )
                 mort_data[i, j, k] = factor_mean
+            tot, std = multi_year_mort(
+                pop="var",
+                baseline=year,
+                year=year,
+                ssp=ssp,
+                ages=ages,
+                diseases=None,
+                countries=countries,
+                return_values=True
+            )
             ax = axes[i, j]
             data = mort_data[i, j]
             labels = [
@@ -145,9 +155,11 @@ def pie(factor_name, factors, region_source, countries=None, region=None):
             circle = plt.Circle((0, 0), 0.7, color="white")
             ax.add_patch(circle)
             total_deaths = f"{int(np.round(np.sum(mort_data[i, j]), -3)):,}"
+            std = f"{int(np.round(std, -3)):,}"
             ax.set_title(f"{ssp}, {year}", fontsize=6)
-            ax.text(0, 0, f"{total_deaths}", ha="center", va="center", fontsize=5)
-            ax.text(0, -0.2, f"deaths", ha="center", va="center", fontsize=5)
+            ax.text(0, 0.2, f"{total_deaths}", ha="center", va="center", fontsize=5)
+            ax.text(0, 0, f"±{std}", ha="center", va="center", fontsize=5)
+            ax.text(0, -0.2, "deaths", ha="center", va="center", fontsize=5)
 
     output_dir = f"/home/ybenp/CMIP6_Images/Mortality/pie/{region_source}"
     os.makedirs(output_dir, exist_ok=True)
@@ -156,7 +168,7 @@ def pie(factor_name, factors, region_source, countries=None, region=None):
     plt.tight_layout()
     plt.savefig(output_file)
     plt.close(fig)
-    print(f"Done: {region}")
+    print(f"Done: {region}, {factor_name}")
 
 
 def map_year(year, countries=None):

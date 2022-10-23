@@ -269,13 +269,17 @@ def visualize(factor_name, region_source, change_type):
             rows = 3
             cols = 2
             fig, axes = plt.subplots(rows, cols, figsize=(12, 15))
+        elif region_source == "GBD_super":
+            rows = 2
+            cols = 4
+            fig, axes = plt.subplots(rows, cols, figsize=(15, 12))
         ymin = -100
         ymax = 200
 
         # Initialize plotting
-        fig.suptitle(
-            f"Decomposition of changes in PM2.5-attributable mortality from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''} by {factor_name}"
-        )
+        # fig.suptitle(
+        #     f"Decomposition of changes in PM2.5-attributable mortality from 2015 to 2040 {'in' + ssp if factor_name != 'SSP' else ''}by {factor_name}"
+        # )
 
         ssp_df = pd.DataFrame()
 
@@ -323,8 +327,8 @@ def visualize(factor_name, region_source, change_type):
             wk_df = df[
                 [
                     factor_name,
-                    "PM2.5 Concentration",
                     "Baseline Mortality",
+                    "PM2.5 Concentration",
                     "Population 25-60",
                     "Population 60-80",
                     "Population 80+",
@@ -386,7 +390,7 @@ def visualize(factor_name, region_source, change_type):
             if i >= len(regions):
                 continue
             ax = ax.get_legend().remove()
-        fig.tight_layout(rect=[0, 0.03, 0.93, 0.95])
+        fig.tight_layout(rect=[0, 0.03, 0.93, 0.90])
         sns.despine()
 
         output_file = f"{output_dir}/{factor_name}{('_' + ssp) if factor_name != 'SSP' else ''}_{change_type}.png"

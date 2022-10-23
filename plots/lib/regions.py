@@ -46,6 +46,7 @@ Eastern_Europe = [
     "Russia",
     "Ukraine",
 ]
+Central_Europe_Eastern_Europe_Central_Asia = [*Central_Asia, *Central_Europe, *Eastern_Europe]
 
 # Super Region: High-income
 Australasia = ["Australia", "New Zealand"]
@@ -76,6 +77,7 @@ Western_Europe = [
     "Switzerland",
     "United Kingdom",
 ]
+High_income = [*Australasia, *High_income_Asia_Pacific, *High_income_North_America, *Southern_Latin_America, *Western_Europe]
 
 # Super Region: Latin America and Caribbean
 Andean_Latin_America = ["Bolivia", "Ecuador", "Peru"]
@@ -109,6 +111,7 @@ Central_Latin_America = [
     "Venezuela",
 ]
 Tropical_Latin_America = ["Brazil", "Paraguay"]
+Latin_America_and_Caribbean = [*Andean_Latin_America, *Caribbean, *Central_Latin_America, *Tropical_Latin_America]
 
 # Super Region: North Africa and Middle East
 North_Africa_and_Middle_East = [
@@ -190,6 +193,7 @@ Western_Sub_Saharan_Africa = [
     "Sierra Leone",
     "Togo",
 ]
+Sub_Saharan_Africa = [*Central_Sub_Saharan_Africa, *Eastern_Sub_Saharan_Africa, *Southern_Sub_Saharan_Africa, *Western_Sub_Saharan_Africa]
 
 # Super Region: Southeast Asia, East Asia, and Oceania
 East_Asia = ["China", "North Korea"]
@@ -208,6 +212,7 @@ Southeast_Asia = [
     "Timor-Leste",
     "Vietnam",
 ]
+Southeast_Asia_East_Asia= [*Southeast_Asia, *East_Asia]
 
 ###############################################################
 
@@ -455,9 +460,19 @@ GBD_regions = [
     Southeast_Asia,
 ]
 
+GBD_super_regions = [
+    High_income,
+    Central_Europe_Eastern_Europe_Central_Asia,
+    Southeast_Asia_East_Asia,
+    Latin_America_and_Caribbean,
+    South_Asia,
+    North_Africa_and_Middle_East,
+    Sub_Saharan_Africa,
+]
+
 SDI_regions = [High_SDI, High_middle_SDI, Middle_SDI, Low_middle_SDI, Low_SDI]
 
-regions = SDI_regions
+regions = GBD_super_regions
 
 all_countries = list(itertools.chain.from_iterable(regions))
 

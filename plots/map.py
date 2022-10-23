@@ -2,25 +2,31 @@ from glob import glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib
 import cartopy
 import cartopy.io.shapereader as shpreader
 import cartopy.crs as ccrs
 import os
+import sys
 from decomposition import mort
 from lib.helper import init_by_factor
 from multiprocessing import Pool
+from string import ascii_uppercase
 
 ssps = ["ssp126", "ssp245", "ssp370", "ssp585"]
+output_ssps = ["SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"]
 diseases = ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
 # diseases = ["Allcause"]
 
-# country_names = ["United States of America", "India", "China"]
 country_codes = np.arange(0, 193)
-# country_codes = [183, 77, 35]
 country_path = "/home/ybenp/CMIP6_data/population/national_pop/countryvalue_blank.csv"
 wk = pd.read_csv(country_path, usecols=[1])
 country_names = wk["COUNTRY"].tolist()
+
+# country_codes = [183, 77, 35, 140, 23, 30, 148]
+# country_names = ["United States of America", "India", "China", "Russia", "Brazil", "Canada", "Saudi Arabia"]
+
 country_conversion_dict = {
     "Russian Federation": "Russia",
     "Bahamas": "The Bahamas",
@@ -83,9 +89,10 @@ def output_diff(data, diff_file, ssp, models):
 
 
 def contribution_process(ssp, factor, type):
-    data = np.zeros(len(country_names))
+    data = np.zeros(len(country_codes))
 
-    for country in country_codes:
+    # Variable i is needed for testing purposes
+    for i, country in enumerate(country_codes):
 
         if factor == "PM25":
             contrib = mort("2010", "2015", 2040, ssp, None, None, country) - mort(
@@ -129,25 +136,25 @@ def contribution_process(ssp, factor, type):
         ref = mort("2010", "2015", 2015, ssp, None, None, country)
         # Raw percent change relative to 2015 mortality
         if type == "pct":
-            data[country] = contrib / ref * 100
+            data[i] = contrib / ref * 100
         # How much of the overall change is due to this factor
         elif type == "frac":
             delta = mort("var", "2040", 2040, ssp, None, None, country) - mort(
                 "2010", "2015", 2015, ssp, None, None, country
             )
-            data[country] = contrib / delta * 100
-            if abs(data[country]) > 200: 
-                data[country] = 0
+            data[i] = contrib / delta * 100
+            if abs(data[i]) > 200: 
+                data[i] = 0
         elif type == "absolute":
-            data[country] = contrib
-        print(f"{ssp}, {factor}, {country_names[country]}: {data[country]}%")
+            data[i] = contrib
+        print(f"{ssp}, {factor}, {country_names[i]}: {data[i]}%")
 
     print(f"DONE: {ssp}")
 
     return data
 
 
-def contribution(factor=None, type="pct"):
+def contribution(factor, type="pct", ssp=None):
     """Plot the contribution of PM2.5 by SSPs"""
     # Define settings
     if type == "absolute":
@@ -166,21 +173,39 @@ def contribution(factor=None, type="pct"):
         elif factor == "Baseline Mortality":
             bounds = [-60, -50, -40, -30, -20, -10, 0]
             cmap = matplotlib.cm.get_cmap("Blues_r", lut=len(bounds) + 1)
-        elif factor == None:
+        elif factor == "SSP":
             # bounds = [-200, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 200]
             bounds = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
             cmap = matplotlib.cm.get_cmap("coolwarm", lut=len(bounds) + 1)
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
+    # Pre-emptively make output directory
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/map/"
+    os.makedirs(output_dir, exist_ok=True)
+
     fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
-    fig.set_size_inches(16, 8)
+    fig.set_size_inches(15, 8)
 
     pool = Pool()
-    if factor == None:
-        factors = ["PM25", "Aging", "Population Size", "Baseline Mortality"]
-        ssp_args = ["ssp245"] * len(factors)
+    if factor == "SSP":
+        assert(ssp != None)
+        factors = ["PM25", "Baseline Mortality", "Population Size", "Aging"]
+        ssp_args = [ssp] * len(factors)
         type_args = [type] * len(factors)
         data = pool.starmap(contribution_process, zip(ssp_args, factors, type_args))
+        data = np.array(data)
+
+        df = pd.DataFrame({
+            "Country Index": country_codes,
+            "Country Name": country_names,
+            "PM2.5": data[0],
+            "Baseline Mortality": data[1],
+            "Population Size (25-60)": data[2],
+            "Aging (60+)": data[3],
+            "Overall": np.sum(data, axis=0)
+        })
+        df.to_csv(f"{output_dir}/{ssp}_contrib_{type}.csv", index=False)
+
     else:
         factor_args = [factor] * len(ssps)
         type_args = [type] * len(ssps)
@@ -190,11 +215,6 @@ def contribution(factor=None, type="pct"):
         row = i // 2
         col = i % 2
         ax = axes[row, col]
-
-        # ax.add_feature(cartopy.feature.LAND)
-        ax.add_feature(cartopy.feature.OCEAN)
-        ax.add_feature(cartopy.feature.COASTLINE)
-        ax.add_feature(cartopy.feature.BORDERS)
 
         countries = reader.records()
         for country in countries:
@@ -209,34 +229,62 @@ def contribution(factor=None, type="pct"):
                 ax.add_geometries(
                     [country.geometry], ccrs.PlateCarree(), facecolor=color
                 )
-        if factor == None:
-            ax.set_title(factors[i])
+        
+        # ax.add_feature(cartopy.feature.LAND)
+        # ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.3)
+        ax.add_feature(cartopy.feature.BORDERS, linewidth=0.3)
+    
+        ax.set_title(ascii_uppercase[i], loc="left")
+        if factor == "SSP":
+            ax.set_title(factors[i], loc="right")
         else:
-            ax.set_title(ssps[i])
+            ax.set_title(output_ssps[i], loc="right")
 
-    cbar = fig.colorbar(
-        matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
-        ax=axes.ravel().tolist(),
-        shrink=0.6,
-        ticks=bounds,
-        spacing="uniform",
-        format="%d",
-    )
-    cbar.ax.set_ylabel(f"Percent Change")
-    if factor == None:
-        fig.suptitle(f"Contribution of different factors")
-    else:
-        fig.suptitle(f"Contribution of {factor} under different SSPs")
+    handles = []
+    for i in range(len(bounds) + 1): 
+        color = cmap(i)
+        if i == 0: 
+            label = f"< {bounds[i]}"
+        elif i == len(bounds): 
+            label = f"> {bounds[i - 1]}"
+        else: 
+            label = f"{bounds[i - 1]} to {bounds[i]}"
+        patch = mpatches.Patch(color=color, label=label)
+        handles.append(patch)
+    fig.legend(handles=handles, loc="center right", title="% Change")
 
-    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/map/"
-    os.makedirs(output_dir, exist_ok=True)
-    output_file = f"{output_dir}/{f'{factor}_' if factor != None else ''}contrib_{type}.png"
-    plt.savefig(output_file)
+    # cbar = fig.colorbar(
+    #     matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
+    #     ax=axes.ravel().tolist(),
+    #     shrink=0.9,
+    #     ticks=bounds,
+    #     spacing="uniform",
+    #     format="%d",
+    # )
+    # cbar.ax.set_ylabel(f"Percent Change")
+    # if factor == "SSP":
+    #     fig.suptitle(f"Contribution of different factors")
+    # else:
+    #     fig.suptitle(f"Contribution of {factor} under different SSPs")
+
+    output_file = f"{output_dir}/{f'{ssp}_' if factor == 'SSP' else f'{factor}_'}contrib_{type}"
+    plt.savefig(output_file + ".eps", format="eps", dpi=1200)
+    plt.savefig(output_file + ".png", format="png", dpi=1200)
     plt.close(fig)
 
 
 def main():
-    contribution()
+    factor = sys.argv[1]
+    # contribution(factor="PM25")
+    # contribution(factor="Baseline Mortality")
+    # contribution(factor="Population")
+    # contribution(factor="Population Size")
+    # contribution(factor="Aging")
+    if factor in ssps:
+        contribution(factor="SSP", ssp=factor)
+    else:
+        contribution(factor, ssp=None)
 
 
 if __name__ == "__main__":

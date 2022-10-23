@@ -55,11 +55,23 @@ def get_regions(region_source):
         "Low SDI": Low_SDI,
         "World": ["World"],
     }
+    GBD_super_region_countries_dict = {
+        "High-income": High_income,
+        "Central Europe, Eastern Europe, Central Asia": Central_Europe_Eastern_Europe_Central_Asia,
+        "Southeast Asia, East Asia": Southeast_Asia_East_Asia,
+        "Latin America and Caribbean": Latin_America_and_Caribbean,
+        "South Asia": South_Asia,
+        "North Africa and Middle East": North_Africa_and_Middle_East,
+        "Sub-Saharan Africa": Sub_Saharan_Africa,
+        "World": ["World"],
+    }
 
     if region_source == "GBD":
         region_countries_dict = GBD_region_countries_dict
     elif region_source == "SDI":
         region_countries_dict = SDI_region_countries_dict
+    elif region_source == "GBD_super":
+        region_countries_dict = GBD_super_region_countries_dict
     else:
         raise Exception(f"Invalid region source {region_source}")
 

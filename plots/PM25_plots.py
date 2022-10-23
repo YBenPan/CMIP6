@@ -385,10 +385,12 @@ def map_delta(type="Concentration"):
 def main():
     # line()
     # map()
-    output_means(2015, "SDI")
-    output_means(2015, "GBD")
-    output_means(2040, "SDI")
-    output_means(2040, "GBD")
+    output_means(2015, "GBD_super")
+    output_means(2040, "GBD_super")
+    # output_means(2015, "SDI")
+    # output_means(2015, "GBD")
+    # output_means(2040, "SDI")
+    # output_means(2040, "GBD")
     # map_year(year=2040, type="Concentration")
     # map_delta(type="Concentration")
 
