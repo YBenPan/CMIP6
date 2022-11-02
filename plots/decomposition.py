@@ -1,4 +1,5 @@
 import os
+from re import L
 import sys
 from glob import glob
 import numpy as np
@@ -103,6 +104,55 @@ def mort(
     if return_values:
         return factor_values
     return factor_mean
+
+
+def country_mort(
+    pop,
+    baseline,
+    year,
+    ssp,
+    ages=None,
+    diseases=None,
+    countries=None,
+):
+    """Get country-level mortality from projections"""
+    if countries is None:
+        countries = [-1]
+    ages = ["all_age_Mean"] if ages is None else ages
+    diseases = (
+        ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
+        if diseases is None
+        else diseases
+    )
+    baseline = str(baseline)
+    year = str(year)
+    models = get_models(ssp)
+    factor_values = []
+    pop_ssp = pop_ssp_dict[ssp]
+
+    all_values = np.zeros((len(models), len(countries)))
+
+    for i, model in enumerate(models):
+
+        # Search Allcause first to get the number of files/realizations in the model
+        search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National_GBD/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/Allcause_mean/all_ages_{model}_*_{year}_GEMM.csv"
+        files = sorted(glob(search_str))
+        model_values = np.zeros((len(files), len(countries)))
+
+        for disease in diseases:
+
+            search_str = f"{parent_dir}/Baseline_Ben_{baseline}_National_GBD/5_years/{ssp}/Pop_{pop_ssp}_{pop}/CountryMortalityAbsolute/{disease}_mean/all_ages_{model}_*_{year}_GEMM.csv"
+            files = sorted(glob(search_str))
+
+            for j, file in enumerate(files):
+                wk = pd.read_csv(file, usecols=np.arange(1, 49, 3))
+                model_values[j] += wk.iloc[countries][ages].values.ravel()
+
+        model_mean = np.mean(model_values, axis=0)
+        all_values[i] = model_mean
+
+    all_mean = np.mean(all_values, axis=0)
+    return all_mean
 
 
 def multi_year_mort(
@@ -417,11 +467,22 @@ def main():
     #     for result in pool.starmap(visualize, args):
     #         print(result, flush=True)
 
-    # Get arguments from CLI
-    assert len(sys.argv) == 4
-    factor_name, region_source, change_type = sys.argv[1:]
+    # Test country mortality function
+    print(
+        country_mort(
+            pop="var",
+            baseline="2040",
+            year=2040,
+            ssp="ssp245",
+            countries=np.arange(0, 193),
+        )
+    )
 
-    visualize(factor_name, region_source, change_type)
+    # Get arguments from CLI
+    # assert len(sys.argv) == 4
+    # factor_name, region_source, change_type = sys.argv[1:]
+
+    # visualize(factor_name, region_source, change_type)
 
 
 if __name__ == "__main__":
