@@ -277,7 +277,7 @@ def contribution(factor, type="pct", ssp=None):
 def snapshot(year):
     """Plot mortality in given year on a map"""
     # Define settings
-    bounds = [-100000, -10000, -1000, -100, -10, 0, 10, 100, 1000, 10000, 100000]
+    bounds = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
     cmap = matplotlib.cm.get_cmap("coolwarm", lut=len(bounds) + 1)
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
@@ -294,8 +294,10 @@ def snapshot(year):
         col = i % 2
         ax = axes[row, col]
 
-        data = country_mort(pop="var", baseline=year, year=year, ssp=ssp, countries=np.arange(0, 193))
-        data -= country_mort(pop="var", baseline=year, year=year, ssp="ssp245", countries=np.arange(0, 193))
+        data = country_mort(pop="var", baseline=year, year=2040, ssp=ssp, countries=np.arange(0, 193))
+        data -= country_mort(pop="var", baseline=2015, year=2015, ssp=ssp, countries=np.arange(0, 193))
+        data /= country_mort(pop="var", baseline=2015, year=2015, ssp=ssp, countries=np.arange(0, 193))
+        data *= 100
 
         countries = reader.records()
         for country in countries:
@@ -312,31 +314,33 @@ def snapshot(year):
                 )
         ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.3)
         ax.add_feature(cartopy.feature.BORDERS, linewidth=0.3)
+        ax.set_title(ascii_uppercase[i], loc="left")
+        ax.set_title(output_ssps[i], loc="right")
     
-        # handles = []
-        # for i in range(len(bounds) + 1): 
-        #     color = cmap(i)
-        #     if i == 0: 
-        #         label = f"< {'{:.0e}'.format(bounds[i])}"
-        #     if i == len(bounds): 
-        #         label = f"> {'{:.0e}'.format(bounds[i - 1])}"
-        #     else: 
-        #         label = f"{'{:.0e}'.format(bounds[i - 1])} to {'{:.0e}'.format(bounds[i])}"
-        #     patch = mpatches.Patch(color=color, label=label)
-        #     handles.append(patch)
-        # fig.legend(handles=handles, loc="center right", title="Number of deaths", fontsize=8)
+    handles = []
+    for i in range(len(bounds) + 1): 
+        color = cmap(i)
+        if i == 0: 
+            label = f"< {bounds[i]}"
+        if i == len(bounds): 
+            label = f"> {bounds[i - 1]}"
+        else: 
+            label = f"{bounds[i - 1]} to {bounds[i]}"
+        patch = mpatches.Patch(color=color, label=label)
+        handles.append(patch)
+    fig.legend(handles=handles, loc="center right", title="% Change", fontsize=8)
 
-    cbar = fig.colorbar(
-        matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
-        ax=axes.ravel().tolist(),
-        shrink=0.9,
-        ticks=bounds,
-        spacing="uniform",
-        format="%d",
-    )
-    cbar.ax.set_ylabel(f"Change in Number of Deaths")
+    # cbar = fig.colorbar(
+    #     matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
+    #     ax=axes.ravel().tolist(),
+    #     shrink=0.9,
+    #     ticks=bounds,
+    #     spacing="uniform",
+    #     format="%d",
+    # )
+    # cbar.ax.set_ylabel(f"Change in Number of Deaths")
 
-    output_file = f"{output_dir}/{year}_delta.png"
+    output_file = f"{output_dir}/delta.png"
     plt.savefig(output_file, format="png", dpi=1200)
     plt.close(fig)
 
