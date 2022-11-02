@@ -285,14 +285,13 @@ def snapshot(year):
     output_dir = f"/home/ybenp/CMIP6_Images/Mortality/map/snapshots"
     os.makedirs(output_dir, exist_ok=True)
 
-    fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
-    fig.set_size_inches(15, 8)
-
     for i, ssp in enumerate(ssps):
 
-        row = i // 2
-        col = i % 2
-        ax = axes[row, col]
+        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+        fig.set_size_inches(15, 8)
+        # row = i // 2
+        # col = i % 2
+        # ax = axes[row, col]        
 
         data = country_mort(pop="var", baseline=year, year=2040, ssp=ssp, countries=np.arange(0, 193))
         data -= country_mort(pop="var", baseline=2015, year=2015, ssp=ssp, countries=np.arange(0, 193))
@@ -312,37 +311,36 @@ def snapshot(year):
                 ax.add_geometries(
                     [country.geometry], ccrs.PlateCarree(), facecolor=color
                 )
-        ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.3)
-        ax.add_feature(cartopy.feature.BORDERS, linewidth=0.3)
-        ax.set_title(ascii_uppercase[i], loc="left")
-        ax.set_title(output_ssps[i], loc="right")
+        ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.5)
+        ax.add_feature(cartopy.feature.BORDERS, linewidth=0.5)
+        ax.set_title(output_ssps[i], loc="center")
     
-    handles = []
-    for i in range(len(bounds) + 1): 
-        color = cmap(i)
-        if i == 0: 
-            label = f"< {bounds[i]}"
-        if i == len(bounds): 
-            label = f"> {bounds[i - 1]}"
-        else: 
-            label = f"{bounds[i - 1]} to {bounds[i]}"
-        patch = mpatches.Patch(color=color, label=label)
-        handles.append(patch)
-    fig.legend(handles=handles, loc="center right", title="% Change", fontsize=8)
+        handles = []
+        for i in range(len(bounds) + 1): 
+            color = cmap(i)
+            if i == 0: 
+                label = f"< {bounds[i]}"
+            if i == len(bounds): 
+                label = f"> {bounds[i - 1]}"
+            else: 
+                label = f"{bounds[i - 1]} to {bounds[i]}"
+            patch = mpatches.Patch(color=color, label=label)
+            handles.append(patch)
+        fig.legend(handles=handles, loc="center right", title="% Change", fontsize=8)
 
-    # cbar = fig.colorbar(
-    #     matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
-    #     ax=axes.ravel().tolist(),
-    #     shrink=0.9,
-    #     ticks=bounds,
-    #     spacing="uniform",
-    #     format="%d",
-    # )
-    # cbar.ax.set_ylabel(f"Change in Number of Deaths")
+        # cbar = fig.colorbar(
+        #     matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
+        #     ax=axes.ravel().tolist(),
+        #     shrink=0.9,
+        #     ticks=bounds,
+        #     spacing="uniform",
+        #     format="%d",
+        # )
+        # cbar.ax.set_ylabel(f"Change in Number of Deaths")
 
-    output_file = f"{output_dir}/delta.png"
-    plt.savefig(output_file, format="png", dpi=1200)
-    plt.close(fig)
+        output_file = f"{output_dir}/{ssp}_delta.png"
+        plt.savefig(output_file, format="png", dpi=1200)
+        plt.close(fig)
 
 
 def main():
