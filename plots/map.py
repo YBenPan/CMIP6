@@ -274,8 +274,51 @@ def contribution(factor, type="pct", ssp=None):
     plt.close(fig)
 
 
+def snapshot(year):
+    """Plot mortality in given year on a map"""
+    # Define settings
+    bounds = [0, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+    cmap = matplotlib.cm.get_cmap("Reds", lut=len(bounds) + 1)
+
+    # Pre-emptively make output directory
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/map/snapshots"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for ssp in ssps:
+
+        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+        fig.set_size_inches(8, 6)
+
+        # TODO: Replace mort with mort_by_country
+        data = mort(pop="var", baseline="2040", year=2040, ssp=ssp, countries=np.arange(0, 193))
+
+        print(data.shape)
+        input()
+
+        countries = reader.records()
+        for country in countries:
+            cur_name = country.attributes["NAME_LONG"]
+            if cur_name in country_conversion_dict:
+                cur_name = country_conversion_dict[cur_name]
+            if cur_name in country_names:
+                cur_index = country_names.index(cur_name)
+                if np.isnan(data[cur_index]):
+                    continue
+                color = findColor(bounds, cmap, data[cur_index])
+                ax.add_geometries(
+                    [country.geometry], ccrs.PlateCarree(), facecolor=color
+                )
+        ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.3)
+        ax.add_feature(cartopy.feature.BORDERS, linewidth=0.3)
+    
+
 def main():
-    factor = sys.argv[1]
+    type = sys.argv[1]
+    if (type == "snapshot"):
+        snapshot(2015)
+        snapshot(2040)
+        return
+    factor = sys.argv[2]
     # contribution(factor="PM25")
     # contribution(factor="Baseline Mortality")
     # contribution(factor="Population")
