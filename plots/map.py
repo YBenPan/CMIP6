@@ -9,7 +9,7 @@ import cartopy.io.shapereader as shpreader
 import cartopy.crs as ccrs
 import os
 import sys
-from decomposition import mort
+from decomposition import mort, country_mort
 from lib.helper import init_by_factor
 from multiprocessing import Pool
 from string import ascii_uppercase
@@ -277,23 +277,25 @@ def contribution(factor, type="pct", ssp=None):
 def snapshot(year):
     """Plot mortality in given year on a map"""
     # Define settings
-    bounds = [0, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
-    cmap = matplotlib.cm.get_cmap("Reds", lut=len(bounds) + 1)
+    bounds = [-100000, -10000, -1000, -100, -10, 0, 10, 100, 1000, 10000, 100000]
+    cmap = matplotlib.cm.get_cmap("coolwarm", lut=len(bounds) + 1)
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
     # Pre-emptively make output directory
     output_dir = f"/home/ybenp/CMIP6_Images/Mortality/map/snapshots"
     os.makedirs(output_dir, exist_ok=True)
 
-    for ssp in ssps:
+    fig, axes = plt.subplots(2, 2, subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(15, 8)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
-        fig.set_size_inches(8, 6)
+    for i, ssp in enumerate(ssps):
 
-        # TODO: Replace mort with mort_by_country
-        data = mort(pop="var", baseline="2040", year=2040, ssp=ssp, countries=np.arange(0, 193))
+        row = i // 2
+        col = i % 2
+        ax = axes[row, col]
 
-        print(data.shape)
-        input()
+        data = country_mort(pop="var", baseline=year, year=year, ssp=ssp, countries=np.arange(0, 193))
+        data -= country_mort(pop="var", baseline=year, year=year, ssp="ssp245", countries=np.arange(0, 193))
 
         countries = reader.records()
         for country in countries:
@@ -311,6 +313,33 @@ def snapshot(year):
         ax.add_feature(cartopy.feature.COASTLINE, linewidth=0.3)
         ax.add_feature(cartopy.feature.BORDERS, linewidth=0.3)
     
+        # handles = []
+        # for i in range(len(bounds) + 1): 
+        #     color = cmap(i)
+        #     if i == 0: 
+        #         label = f"< {'{:.0e}'.format(bounds[i])}"
+        #     if i == len(bounds): 
+        #         label = f"> {'{:.0e}'.format(bounds[i - 1])}"
+        #     else: 
+        #         label = f"{'{:.0e}'.format(bounds[i - 1])} to {'{:.0e}'.format(bounds[i])}"
+        #     patch = mpatches.Patch(color=color, label=label)
+        #     handles.append(patch)
+        # fig.legend(handles=handles, loc="center right", title="Number of deaths", fontsize=8)
+
+    cbar = fig.colorbar(
+        matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm),
+        ax=axes.ravel().tolist(),
+        shrink=0.9,
+        ticks=bounds,
+        spacing="uniform",
+        format="%d",
+    )
+    cbar.ax.set_ylabel(f"Change in Number of Deaths")
+
+    output_file = f"{output_dir}/{year}_delta.png"
+    plt.savefig(output_file, format="png", dpi=1200)
+    plt.close(fig)
+
 
 def main():
     type = sys.argv[1]
