@@ -383,7 +383,7 @@ def map_delta(type="Concentration"):
         matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap),
         ax=axes.ravel().tolist(),
         ticks=bounds,
-        spacing="proportional",
+        spacing="uniform",
         shrink=0.9,
     )
     cbar.set_label(f"Percent Change in {type}")

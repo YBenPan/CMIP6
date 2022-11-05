@@ -155,6 +155,40 @@ def country_mort(
     return all_mean
 
 
+def output_country_mort(
+    pops,
+    baselines,
+    years,
+    ages=None,
+    diseases=None,
+    countries=None
+):
+    """Output country-level mortality to csv files"""
+    if countries is None:
+        countries = np.arange(0, 193)
+    ages = ["all_age_Mean"] if ages is None else ages
+    diseases = (
+        ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
+        if diseases is None
+        else diseases
+    )
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/country"
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, "mort.csv")
+
+    data = np.zeros((len(countries), len(years) * len(ssps)))
+    col_labels = []
+
+    for i, year in enumerate(years): 
+        for j, ssp in enumerate(ssps): 
+            index = i * len(ssps) + j
+            col_labels.append(f"{year} {ssp}")
+            data[:, index] = country_mort(pops[i], baselines[i], years[i], ssp, ages, diseases, countries)
+    
+    df = pd.DataFrame(data, columns=col_labels, index=country_names[:-1])
+    df.to_csv(output_file)
+
+
 def multi_year_mort(
     pop,
     baseline,
@@ -468,14 +502,23 @@ def main():
     #         print(result, flush=True)
 
     # Test country mortality function
-    print(
-        country_mort(
-            pop="var",
-            baseline="2040",
-            year=2040,
-            ssp="ssp245",
-            countries=np.arange(0, 193),
-        )
+    # print(
+    #     country_mort(
+    #         pop="var",
+    #         baseline="2040",
+    #         year=2040,
+    #         ssp="ssp245",
+    #         countries=np.arange(0, 193),
+    #     )
+    # )
+
+    output_country_mort(
+        pops=["2010", "var"],
+        baselines=[2015, 2040],
+        years=[2015, 2040],
+        ages=None,
+        diseases=None,
+        countries=None
     )
 
     # Get arguments from CLI
