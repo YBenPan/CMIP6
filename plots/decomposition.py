@@ -172,7 +172,7 @@ def output_country_mort(
         if diseases is None
         else diseases
     )
-    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/country"
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/GBD_super"
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, "mort.csv")
 
@@ -186,6 +186,39 @@ def output_country_mort(
             data[:, index] = country_mort(pops[i], baselines[i], years[i], ssp, ages, diseases, countries)
     
     df = pd.DataFrame(data, columns=col_labels, index=country_names[:-1])
+    df.to_csv(output_file)
+
+def output_region_mort(
+    pops,
+    baselines,
+    years,
+    ages=None,
+    diseases=None,
+    region_source="GBD_super"
+):
+    """Output region-level mortality to csv files"""
+    regions, region_countries, region_countries_names = get_regions(region_source)
+    ages = ["all_age_Mean"] if ages is None else ages
+    diseases = (
+        ["COPD", "DEM", "IHD", "LC", "LRI", "Stroke", "T2D"]
+        if diseases is None
+        else diseases
+    )
+    output_dir = f"/home/ybenp/CMIP6_Images/Mortality/decomposition/{region_source}"
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, "mort.csv")
+
+    data = np.zeros((len(regions), len(years) * len(ssps)))
+    col_labels = []
+
+    for i, year in enumerate(years): 
+        for j, ssp in enumerate(ssps): 
+            index = i * len(ssps) + j
+            col_labels.append(f"{year} {ssp}")
+            for k, region in enumerate(regions):
+                data[k, index] = np.sum(country_mort(pops[i], baselines[i], years[i], ssp, ages, diseases, region_countries[k]))
+    
+    df = pd.DataFrame(data, columns=col_labels, index=regions)
     df.to_csv(output_file)
 
 
@@ -512,13 +545,23 @@ def main():
     #     )
     # )
 
-    output_country_mort(
+    # Test country mortality output function
+    # output_country_mort(
+    #     pops=["2010", "var"],
+    #     baselines=[2015, 2040],
+    #     years=[2015, 2040],
+    #     ages=None,
+    #     diseases=None,
+    #     countries=None,
+    # )
+
+    output_region_mort(
         pops=["2010", "var"],
         baselines=[2015, 2040],
         years=[2015, 2040],
         ages=None,
         diseases=None,
-        countries=None
+        region_source="GBD_super",
     )
 
     # Get arguments from CLI
