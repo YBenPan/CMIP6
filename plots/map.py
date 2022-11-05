@@ -65,11 +65,11 @@ tmp = sorted([country.attributes["NAME_LONG"] for country in countries])
 
 def findColor(colorbounds, colormap, num):
 
-    for x in np.arange(1, len(colorbounds)):
+    for x in np.arange(0, len(colorbounds)):
         if num >= colorbounds[x]:
             continue
         else:
-            return colormap(x - 1)
+            return colormap(x)
     return colormap(len(colorbounds))
 
 
@@ -293,10 +293,10 @@ def snapshot(year):
         # col = i % 2
         # ax = axes[row, col]        
 
-        data = country_mort(pop="var", baseline=year, year=2040, ssp=ssp, countries=np.arange(0, 193))
-        data -= country_mort(pop="var", baseline=2015, year=2015, ssp=ssp, countries=np.arange(0, 193))
-        data /= country_mort(pop="var", baseline=2015, year=2015, ssp=ssp, countries=np.arange(0, 193))
-        data *= 100
+        mort_2040 = country_mort(pop="var", baseline=year, year=2040, ssp=ssp, countries=np.arange(0, 193))
+        mort_2015 = country_mort(pop="2010", baseline=2015, year=2015, ssp=ssp, countries=np.arange(0, 193))
+        print(mort_2040[35], mort_2015[35])
+        data = (mort_2040 - mort_2015) / mort_2015 * 100
 
         countries = reader.records()
         for country in countries:
@@ -320,7 +320,7 @@ def snapshot(year):
             color = cmap(i)
             if i == 0: 
                 label = f"< {bounds[i]}"
-            if i == len(bounds): 
+            elif i == len(bounds): 
                 label = f"> {bounds[i - 1]}"
             else: 
                 label = f"{bounds[i - 1]} to {bounds[i]}"
@@ -346,7 +346,7 @@ def snapshot(year):
 def main():
     type = sys.argv[1]
     if (type == "snapshot"):
-        snapshot(2015)
+        # snapshot(2015)
         snapshot(2040)
         return
     factor = sys.argv[2]
