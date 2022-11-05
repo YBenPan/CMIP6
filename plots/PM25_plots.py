@@ -24,7 +24,7 @@ longitude = np.arange(0.25, 360.25, 0.5)
 
 # Get countries and regions
 country_dict = get_country_names()
-regions, region_countries, region_countries_names = get_regions("GBD")
+regions, region_countries, region_countries_names = get_regions("GBD_super")
 
 
 def line(region, countries, countries_names):
@@ -219,12 +219,12 @@ def map_year(year, countries=None, type="Concentration"):
 
     if type == "Concentration":
         # bounds = [0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 40, 50, 60]
-        bounds = [0.1, 0.3, 0.5, 0.75, 1, 3, 5, 7.5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+        bounds = [0.1, 0.3, 0.5, 0.75, 1, 3, 5, 7.5, 10, 15, 20, 25, 30, 40, 50]
     elif type == "Exposure":
         bounds = [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40]
     vmin = 0
     vmax = bounds[-1]
-    cmap = matplotlib.cm.get_cmap("YlGnBu", lut=len(bounds) + 1)
+    cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
     # pm25_path = "/project/ccr02/lamar/CMIP6_analysis/PM2.5/annual_0.5x0.5"
@@ -236,7 +236,9 @@ def map_year(year, countries=None, type="Concentration"):
 
     for i, ssp in enumerate(ssps):
 
-        conc, awm, pwm = mean(ssp, year, fractionCountries, type="PM2.5 Concentration")
+        conc, awm, pwm, conc_std, awm_std, pwm_std = mean(
+            ssp, year, fractionCountries, type="PM2.5 Concentration"
+        )
 
         if type == "Exposure":
             pop, tot_pop = get_pop(ssp, year, fractionCountries)
@@ -282,17 +284,17 @@ def map_delta(type="Concentration"):
     fig.suptitle(f"Change in PM2.5 {type} from 2015 to 2040")
 
     if type == "Concentration":
-        bounds = np.arange(-100, 60, 10)
+        bounds = [-100, -80, -60, -40, -20, 0, 10, 20, 30, 40, 50]
+        vmin = -100
         vmax = 50
     elif type == "Exposure":
         bounds = [-100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100]
+        vmin = -100
         vmax = 100
     cmap = matplotlib.cm.get_cmap("jet", lut=len(bounds) + 1)
-
-    vmin = -100
     norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
-    abs_change_data = np.zeros((len(regions), len(ssps)))
+    pct_change_data = np.zeros((len(regions), len(ssps)))
 
     for i, ssp in enumerate(ssps):
 
@@ -305,26 +307,36 @@ def map_delta(type="Concentration"):
             fractionRegion = get_countries_mask(countries=countries)
             tot_area = np.sum(fractionRegion)
 
-            conc_2015, awm_2015, pwm_2015 = mean(
-                ssp, 2015, fractionRegion, type="PM2.5 Concentration"
-            )
-            conc_2040, awm_2040, pwm_2040 = mean(
-                ssp, 2040, fractionRegion, type="PM2.5 Concentration"
-            )
+            (
+                conc_2015,
+                awm_2015,
+                pwm_2015,
+                conc_2015_std,
+                awm_2015_std,
+                pwm_2015_std,
+            ) = mean(ssp, 2015, fractionRegion, type="PM2.5 Concentration")
+            (
+                conc_2040,
+                awm_2040,
+                pwm_2040,
+                conc_2040_std,
+                awm_2040_std,
+                pwm_2040_std,
+            ) = mean(ssp, 2040, fractionRegion, type="PM2.5 Concentration")
             uwm_2015 = np.sum(conc_2015) / tot_area
             uwm_2040 = np.sum(conc_2040) / tot_area
-            abs_change_data[j, i] = uwm_2040 - uwm_2015
-            print(f"{region}: UWM Change: {abs_change_data[j, i]}")
+            pct_change_data[j, i] = (uwm_2040 - uwm_2015) / uwm_2015 * 100
+            print(f"{region}: UWM Change: {pct_change_data[j, i]}")
 
         tot_area = np.sum(fractionCountries)
-        conc_2015, awm_2015, pwm_2015 = mean(
+        conc_2015, awm_2015, pwm_2015, conc_2015_std, awm_2015_std, pwm_2015_std = mean(
             ssp, 2015, fractionCountries, type="PM2.5 Concentration"
         )
-        conc_2040, awm_2040, pwm_2040 = mean(
+        conc_2040, awm_2040, pwm_2040, conc_2040_std, awm_2040_std, pwm_2040_std = mean(
             ssp, 2040, fractionCountries, type="PM2.5 Concentration"
         )
-        # conc = (conc_2040 - conc_2015) / conc_2015 * 100
-        conc = conc_2040 - conc_2015
+        conc = (conc_2040 - conc_2015) / conc_2015 * 100
+        # conc = conc_2040 - conc_2015
 
         pop_2015, tot_pop_2015 = get_pop(ssp, 2015, fractionCountries)
         pop_2040, tot_pop_2040 = get_pop(ssp, 2040, fractionCountries)
@@ -342,8 +354,8 @@ def map_delta(type="Concentration"):
         print(ssp, "2040 Global:", np.round(awm_2040, 1), np.round(pwm_2040, 1))
         uwm_2015 = np.sum(conc_2015) / tot_area
         uwm_2040 = np.sum(conc_2040) / tot_area
-        abs_change_data[-1, i] = uwm_2040 - uwm_2015
-        print(f"World: UWM Change: {uwm_2040 - uwm_2015}")
+        pct_change_data[-1, i] = (uwm_2040 - uwm_2015) / uwm_2015 * 100
+        print(f"World: UWM Change: {(uwm_2040 - uwm_2015) / uwm_2015 * 100}")
 
         ax_i = i // 2
         ax_j = i % 2
@@ -362,8 +374,8 @@ def map_delta(type="Concentration"):
 
     # Output csv
     if type == "Concentration":
-        output_file = os.path.join(output_dir, "abs_change.csv")
-        df = pd.DataFrame(abs_change_data, index=regions, columns=ssps)
+        output_file = os.path.join(output_dir, "pct_change.csv")
+        df = pd.DataFrame(pct_change_data, index=regions, columns=ssps)
         df.to_csv(output_file)
 
     # Add color bar
@@ -374,10 +386,10 @@ def map_delta(type="Concentration"):
         spacing="proportional",
         shrink=0.9,
     )
-    cbar.set_label(f"Absolute Change in {type}")
+    cbar.set_label(f"Percent Change in {type}")
 
     # Output figure
-    output_file = os.path.join(output_dir, f"Abs_Delta_{type}.png")
+    output_file = os.path.join(output_dir, f"Delta_{type}.png")
     plt.savefig(output_file)
     plt.close(fig)
 
@@ -385,14 +397,14 @@ def map_delta(type="Concentration"):
 def main():
     # line()
     # map()
-    output_means(2015, "GBD_super")
-    output_means(2040, "GBD_super")
+    # output_means(2015, "GBD_super")
+    # output_means(2040, "GBD_super")
     # output_means(2015, "SDI")
     # output_means(2015, "GBD")
     # output_means(2040, "SDI")
     # output_means(2040, "GBD")
-    # map_year(year=2040, type="Concentration")
-    # map_delta(type="Concentration")
+    # map_year(year=2015, type="Concentration")
+    map_delta(type="Concentration")
 
 
 if __name__ == "__main__":
